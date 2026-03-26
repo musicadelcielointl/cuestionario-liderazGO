@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuestionarios LiderazGO — Milton Valle</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0D1B2A; color: #eee; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: linear-gradient(135deg, #0A1628 0%, #0D2240 60%, #071018 100%); padding: 28px 24px 20px; text-align: center; border-bottom: 4px solid #1B6B3A; position: relative; }
+  .header-top { font-size: 12px; letter-spacing: 4px; color: #2DBF72; text-transform: uppercase; margin-bottom: 6px; }
+  .header h1 { font-size: 2.4em; font-weight: 800; color: #fff; letter-spacing: -1px; }
+  .header h1 span { color: #2DBF72; }
+  .header-sub { font-size: 13px; color: #7BBFDC; margin-top: 6px; letter-spacing: 2px; }
+
+  /* SELECTOR DE CAPÍTULO */
+  .chapter-selector { background: #0A1628; padding: 20px 16px; border-bottom: 1px solid #1a2a3a; overflow-x: auto; white-space: nowrap; text-align: center; }
+  .chapter-selector button { display: inline-block; margin: 4px; padding: 8px 14px; background: #0D2240; color: #7BBFDC; border: 1px solid #1a3a5a; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all .2s; white-space: nowrap; }
+  .chapter-selector button:hover { background: #1B6B3A; color: #fff; border-color: #2DBF72; }
+  .chapter-selector button.active { background: #1B6B3A; color: #fff; border-color: #2DBF72; box-shadow: 0 0 10px rgba(45,191,114,.3); }
+
+  /* CONTENEDOR PRINCIPAL */
+  .main { max-width: 820px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  /* CABECERA DEL CAPÍTULO */
+  .cap-header { background: linear-gradient(135deg, #0A1628, #0D2240); border: 1px solid #1a3a5a; border-left: 5px solid #2DBF72; border-radius: 10px; padding: 20px 24px; margin-bottom: 24px; }
+  .cap-num { font-size: 11px; letter-spacing: 3px; color: #2DBF72; text-transform: uppercase; margin-bottom: 4px; }
+  .cap-titulo { font-size: 1.6em; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  .cap-versiculo { font-size: 13px; color: #7BBFDC; font-style: italic; line-height: 1.6; }
+
+  /* PROGRESO */
+  .progreso-wrap { background: #0A1628; border: 1px solid #1a3a5a; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; }
+  .progreso-bar-bg { flex: 1; height: 8px; background: #1a2a3a; border-radius: 4px; overflow: hidden; }
+  .progreso-bar { height: 100%; background: linear-gradient(90deg, #1B6B3A, #2DBF72); border-radius: 4px; transition: width .4s; }
+  .progreso-txt { font-size: 13px; color: #7BBFDC; white-space: nowrap; }
+
+  /* PREGUNTA */
+  .pregunta-card { background: #0E1E30; border: 1px solid #1a3a5a; border-radius: 12px; padding: 22px 24px; margin-bottom: 18px; transition: border-color .2s; }
+  .pregunta-card.respondida { border-color: #1B6B3A; }
+  .pregunta-card.incorrecta { border-color: #c0392b; }
+  .pregunta-num { display: inline-block; background: #1B6B3A; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; letter-spacing: 1px; margin-bottom: 10px; }
+  .pregunta-texto { font-size: 15px; color: #e0e0e0; line-height: 1.7; margin-bottom: 16px; font-weight: 500; }
+
+  /* OPCIONES */
+  .opciones { display: flex; flex-direction: column; gap: 10px; }
+  .opcion { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: #0A1628; border: 1.5px solid #1a3a5a; border-radius: 8px; cursor: pointer; transition: all .2s; user-select: none; }
+  .opcion:hover:not(.bloqueada) { border-color: #2DBF72; background: #0f2a1a; }
+  .opcion.seleccionada { border-color: #2DBF72; background: #0f2a1a; }
+  .opcion.correcta { border-color: #2DBF72; background: #0a2a14; }
+  .opcion.incorrecta-sel { border-color: #c0392b; background: #2a0a0a; }
+  .opcion.bloqueada { cursor: default; }
+  .opcion-letra { min-width: 28px; height: 28px; border-radius: 50%; background: #1a2a3a; border: 1.5px solid #2a4a6a; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #7BBFDC; transition: all .2s; flex-shrink: 0; }
+  .opcion.seleccionada .opcion-letra { background: #1B6B3A; border-color: #2DBF72; color: #fff; }
+  .opcion.correcta .opcion-letra { background: #1B6B3A; border-color: #2DBF72; color: #fff; }
+  .opcion.incorrecta-sel .opcion-letra { background: #c0392b; border-color: #e74c3c; color: #fff; }
+  .opcion-texto { font-size: 14px; color: #d0d0d0; line-height: 1.6; padding-top: 2px; }
+
+  /* FEEDBACK */
+  .feedback { margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; display: none; }
+  .feedback.correcto { background: #0a2a14; border: 1px solid #2DBF72; color: #2DBF72; display: block; }
+  .feedback.incorrecto { background: #2a0a0a; border: 1px solid #c0392b; color: #e74c3c; display: block; }
+  .feedback .icono { font-weight: 800; margin-right: 6px; }
+
+  /* BOTONES */
+  .btn-wrap { text-align: center; margin: 28px 0 10px; }
+  .btn { padding: 13px 32px; border: none; border-radius: 25px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s; letter-spacing: .5px; }
+  .btn-verificar { background: linear-gradient(135deg, #1B6B3A, #2DBF72); color: #fff; }
+  .btn-verificar:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(45,191,114,.4); }
+  .btn-verificar:disabled { opacity: .4; cursor: default; transform: none; }
+  .btn-reiniciar { background: transparent; color: #7BBFDC; border: 1.5px solid #1a3a5a; margin-left: 12px; }
+  .btn-reiniciar:hover { border-color: #7BBFDC; color: #fff; }
+
+  /* RESULTADO FINAL */
+  .resultado { display: none; background: #0A1628; border: 2px solid #2DBF72; border-radius: 16px; padding: 32px 28px; text-align: center; margin-top: 28px; }
+  .resultado.visible { display: block; }
+  .resultado-titulo { font-size: 1.4em; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  .resultado-score { font-size: 3.5em; font-weight: 900; margin: 16px 0 8px; }
+  .resultado-score.excelente { color: #2DBF72; }
+  .resultado-score.bien { color: #F4D03F; }
+  .resultado-score.mejorar { color: #E74C3C; }
+  .resultado-msg { font-size: 15px; color: #aaa; line-height: 1.7; max-width: 500px; margin: 0 auto 24px; }
+  .resultado-detalle { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
+  .detalle-item { background: #0D2240; padding: 14px 20px; border-radius: 10px; text-align: center; min-width: 100px; }
+  .detalle-num { font-size: 1.8em; font-weight: 800; }
+  .detalle-num.verde { color: #2DBF72; }
+  .detalle-num.rojo { color: #e74c3c; }
+  .detalle-label { font-size: 12px; color: #7BBFDC; margin-top: 4px; }
+
+  /* FOOTER */
+  .footer { text-align: center; padding: 20px; font-size: 12px; color: #2a4a6a; border-top: 1px solid #1a2a3a; margin-top: 40px; }
+
+  @media(max-width:600px){
+    .header h1 { font-size: 1.7em; }
+    .main { padding: 16px 12px 40px; }
+    .pregunta-card { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">Cuestionario Digital</div>
+  <h1>Lideraz<span>GO</span></h1>
+  <div class="header-sub">Milton Valle &nbsp;·&nbsp; 12 Capítulos &nbsp;·&nbsp; 12 Preguntas cada uno</div>
+</div>
+
+<div class="chapter-selector" id="selectorCaps"></div>
+
+<div class="main">
+  <div class="cap-header" id="capHeader"></div>
+  <div class="progreso-wrap">
+    <div class="progreso-bar-bg"><div class="progreso-bar" id="progresoBar" style="width:0%"></div></div>
+    <div class="progreso-txt" id="progresoTxt">0 / 12</div>
+  </div>
+  <div id="preguntasContainer"></div>
+  <div class="btn-wrap">
+    <button class="btn btn-verificar" id="btnVerificar" onclick="verificar()">Verificar Respuestas</button>
+    <button class="btn btn-reiniciar" onclick="reiniciar()">Reiniciar</button>
+  </div>
+  <div class="resultado" id="resultadoFinal"></div>
+</div>
+
+<div class="footer">LiderazGO &copy; Milton Valle &nbsp;|&nbsp; Cuestionario Digital de Estudio</div>
+
+<script>
+const CAPITULOS = [
+  {
+    num: 1, nombre: "DISCIPULADO",
+    versiculo: '"No me elegisteis vosotros a mí, sino que yo os elegí a vosotros." — Juan 15:16',
+    preguntas: [
+      { texto: "¿Qué afirma el capítulo sobre el inicio del discipulado?", opciones: ["Comienza cuando decides enseñar a otros", "Comienza cuando decides aprender", "Comienza cuando eres ungido por un líder", "Comienza cuando terminas un curso bíblico"], correcta: 1 },
+      { texto: "Según Marcos 2:18-20, ¿cuántos tipos de discípulos se mencionan en el capítulo?", opciones: ["Dos tipos", "Cuatro tipos", "Tres tipos", "Cinco tipos"], correcta: 2 },
+      { texto: "¿Cuál era la característica principal de los discípulos de los fariseos?", opciones: ["Tenían señales y milagros", "Sabían mucho de la ley pero no vivían lo que predicaban", "Eran empoderados para hacer las obras del Maestro", "No tenían interés en la Escritura"], correcta: 1 },
+      { texto: "¿Cuánto tiempo duró la inmersión de Jesús con sus discípulos?", opciones: ["Un año", "Tres años y medio", "Cinco años", "Siete meses"], correcta: 1 },
+      { texto: "¿Cuál de estas NO es una de las cuatro formas de discipulado descritas en el capítulo?", opciones: ["Formación", "Relación", "Evangelismo", "Delegación"], correcta: 2 },
+      { texto: "Según Juan 15:15, ¿cómo cambió Jesús la manera en que llamaba a sus discípulos?", opciones: ["Los llamó siervos en lugar de seguidores", "Los llamó amigos, ya no siervos", "Los llamó profetas", "Los llamó apóstoles"], correcta: 1 },
+      { texto: "¿Qué afirma el capítulo que la transferencia requiere?", opciones: ["Grandes plataformas y eventos", "Humildad, cercanía y honra", "Títulos y certificados", "Años de escuela teológica"], correcta: 1 },
+      { texto: "Según Marcos 6:7, ¿cómo envió Jesús a sus discípulos?", opciones: ["Individualmente", "En grupos de cuatro", "De dos en dos", "Todos juntos a la vez"], correcta: 2 },
+      { texto: "¿Qué dice el capítulo sobre la confianza en la delegación?", opciones: ["Se exige por posición", "Se compra con dinero", "Se construye en lo secreto y en la fidelidad diaria", "Se obtiene por antigüedad"], correcta: 2 },
+      { texto: "¿Cuál es el error más común según el capítulo en cuanto al discipulado?", opciones: ["Querer enseñar sin aprender primero", "Querer el propósito sin la formación", "No leer suficiente la Biblia", "No asistir a la iglesia"], correcta: 1 },
+      { texto: "¿Qué dice el capítulo que el discipulado no es?", opciones: ["Un proceso de transformación", "Un estilo de vida", "Un programa con certificado", "Una relación de cercanía"], correcta: 2 },
+      { texto: "Según la conclusión del capítulo, ¿cómo se mide el verdadero discipulado?", opciones: ["Por cuánto sabes", "Por cuántos eventos asistes", "Por cuánto has cambiado y cuántos están siendo formados a través de tu vida", "Por cuántos versículos memorizas"], correcta: 2 },
+    ]
+  },
+  {
+    num: 2, nombre: "IDENTIDAD",
+    versiculo: '"Tu identidad no es un consenso, es una revelación." — LiderazGO',
+    preguntas: [
+      { texto: "¿Dónde comenzó la identidad de David según el capítulo?", opciones: ["Cuando derrotó a Goliat públicamente", "Cuando fue reconocido por el ejército", "Cuando fue visto por Dios en lo oculto y ungido", "Cuando se hizo famoso como músico"], correcta: 2 },
+      { texto: "Según 1 Samuel 16:11-12, ¿dónde estaba David cuando Samuel llegó a la casa de Isaí?", opciones: ["En el palacio del rey", "En el campo, apacentando las ovejas", "En la sinagoga estudiando", "Entrenando con el ejército"], correcta: 1 },
+      { texto: "¿Qué hizo David después de ser ungido rey, según el capítulo?", opciones: ["Exigió su posición de inmediato", "Regresó al campo a cuidar ovejas", "Fue a confrontar a Saúl", "Se mudó al palacio"], correcta: 1 },
+      { texto: "¿Quién confrontó a David acusándolo de soberbia cuando fue a ver la batalla?", opciones: ["El rey Saúl", "El profeta Samuel", "Su hermano mayor Eliab", "El general del ejército"], correcta: 2 },
+      { texto: "¿Con qué armas afirmó David que él venía a enfrentar a Goliat? (1 Samuel 17:45)", opciones: ["Con espada y lanza", "Con honda y piedras", "En el nombre de Jehová de los ejércitos", "Con el ejército de Israel"], correcta: 2 },
+      { texto: "¿Qué dice el capítulo sobre las 'victorias privadas'?", opciones: ["Son menos importantes que las públicas", "Construyen una convicción interna que ningún gigante puede intimidar", "Solo importan si alguien las ve", "Son señal de orgullo espiritual"], correcta: 1 },
+      { texto: "Según el capítulo, ¿de dónde proviene la verdadera debilidad pública?", opciones: ["De no estudiar suficiente", "De falta de liderazgo", "De una vida privada descuidada", "De no tener mentores"], correcta: 2 },
+      { texto: "¿Qué intentó hacer Goliat con sus palabras según el capítulo?", opciones: ["Motivar a David a rendirse", "Deshonrarlo y hacerlo sentir pequeño e insignificante", "Convencerlo de unirse a los filisteos", "Advertirle del peligro"], correcta: 1 },
+      { texto: "¿Qué afirma el capítulo que las voces externas solo tienen poder cuando...", opciones: ["El líder no te apoya", "Hay dudas internas en el corazón", "No has orado ese día", "Estás lejos de la iglesia"], correcta: 1 },
+      { texto: "¿Cuál es la diferencia principal entre identidad y consenso según el capítulo?", opciones: ["La identidad viene de los logros; el consenso de otros", "La identidad es una revelación de Dios; el consenso depende de lo que otros piensen", "Son lo mismo pero en contextos diferentes", "El consenso es más sólido que la identidad"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué forma la vida secreta con Dios?", opciones: ["Solo conocimiento bíblico", "La identidad y las victorias que sostienen los desafíos públicos", "La reputación ante otros", "El éxito ministerial"], correcta: 1 },
+      { texto: "¿Cuál es el fundamento de la identidad según la conclusión del capítulo?", opciones: ["Los aplausos recibidos", "La aprobación de los líderes", "Lo que Dios ya ha declarado sobre ti", "Los resultados visibles"], correcta: 2 },
+    ]
+  },
+  {
+    num: 3, nombre: "CARÁCTER",
+    versiculo: '"El carácter es lo que haces cuando nadie te está mirando." — Billy Graham',
+    preguntas: [
+      { texto: "¿Qué dice el capítulo que el talento puede hacer pero el carácter sostiene?", opciones: ["El talento puede enseñar, el carácter puede orar", "El talento puede abrir puertas, pero solo el carácter puede mantenerlas abiertas", "El talento puede inspirar, el carácter puede servir", "El talento puede predicar, el carácter puede sanar"], correcta: 1 },
+      { texto: "Según Job 1:7-8, ¿por qué destacó Dios a Job?", opciones: ["Por sus riquezas y familia", "Por sus sacrificios en el templo", "Por ser varón perfecto, recto, temeroso de Dios y apartado del mal", "Por ser el hombre más inteligente de su época"], correcta: 2 },
+      { texto: "¿Cuáles son las cuatro áreas del carácter descritas en este capítulo?", opciones: ["Fe, amor, esperanza, paciencia", "Equilibrio, perseverancia, dominio propio, integridad", "Humildad, obediencia, fidelidad, visión", "Oración, ayuno, Palabra, servicio"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué es el dominio propio?", opciones: ["La ausencia total de emociones", "Represión de los sentimientos", "Gobierno: la capacidad de someter las emociones al propósito", "Ignorar todo lo que sientes"], correcta: 2 },
+      { texto: "¿Qué hizo Job cuando perdió todo según Job 1:20-22?", opciones: ["Se enojó con Dios y lo cuestionó con amargura", "Se postró en tierra, adoró y no atribuyó a Dios despropósito alguno", "Pidió a sus amigos que oraran por él", "Guardó silencio y no habló por varios días"], correcta: 1 },
+      { texto: "¿Qué le dijo la esposa de Job cuando él sufrió enfermedades (Job 2:9)?", opciones: ["Que adorara a Dios en la prueba", "Que buscara un sacerdote para orar", "'¿Aún retienes tu integridad? Maldice a Dios, y muérete'", "Que huyeran juntos a otro lugar"], correcta: 2 },
+      { texto: "¿Qué afirmó Job en Job 27:5-6 sobre su integridad?", opciones: ["Que la cedería si Dios lo restauraba", "Que dependía de las circunstancias", "'Hasta que muera, no quitaré de mí mi integridad. Mi justicia tengo asida.'", "Que la integridad es solo para los perfectos"], correcta: 2 },
+      { texto: "¿Qué dice el capítulo que la perseverancia NO es?", opciones: ["Una decisión", "Un sentimiento", "Una determinación de no rendirse", "Parte del carácter cristiano"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué hace el carácter cuando llega el éxito?", opciones: ["Lo amplifica aún más", "Lo hace insostenible", "Evita que el éxito te corrompa", "Lo vuelve innecesario"], correcta: 2 },
+      { texto: "¿Qué dice el capítulo sobre el equilibrio del carácter?", opciones: ["Aparece solo en los momentos fáciles", "Se revela en medio de la presión y es estabilidad en todo entorno", "Se desarrolla solamente con ayuno", "Es un don que solo algunos tienen"], correcta: 1 },
+      { texto: "¿Cuál es la diferencia entre integridad e imagen según el capítulo?", opciones: ["La imagen es más duradera que la integridad", "Son lo mismo en contextos ministeriales", "La integridad es lo que eres cuando nadie te ve; la imagen es lo que aparentas", "La imagen protege más que la integridad"], correcta: 2 },
+      { texto: "Según la conclusión del capítulo, ¿qué definirá el legado al final?", opciones: ["Los talentos y dones ministeriales", "El carácter, no el talento", "El número de personas que lideraste", "Las plataformas que alcanzaste"], correcta: 1 },
+    ]
+  },
+  {
+    num: 4, nombre: "RESTAURACIÓN",
+    versiculo: '"Las heridas no tratadas se convierten en decisiones mal tomadas." — John Bevere',
+    preguntas: [
+      { texto: "¿Por quiénes fue traicionado José según Génesis 37:28?", opciones: ["Sus amigos y vecinos", "Sus propios hermanos", "Los sirvientes de Potifar", "Los gobernantes de Egipto"], correcta: 1 },
+      { texto: "¿Por cuánto fue vendido José a los ismaelitas?", opciones: ["Cincuenta piezas de plata", "Cien piezas de oro", "Veinte piezas de plata", "Treinta piezas de plata"], correcta: 2 },
+      { texto: "¿Qué dice el capítulo sobre el perdón?", opciones: ["Cambia lo que pasó y borra el dolor", "No cambia lo que pasó, pero transforma lo que pasa dentro de ti", "Solo es posible cuando la otra persona se disculpa", "Significa olvidar completamente el daño"], correcta: 1 },
+      { texto: "¿Qué hizo la esposa de Potifar después de que José huyó? (Génesis 39:13-15)", opciones: ["Lo perdonó y no dijo nada", "Lo acusó falsamente de haber intentado agredirla", "Le devolvió su ropa y lo dejó ir", "Le contó la verdad a su esposo"], correcta: 1 },
+      { texto: "¿Cuántos años pasó José en la cárcel después de que el copero lo olvidó?", opciones: ["Un año", "Cinco años", "Dos años", "Diez años"], correcta: 2 },
+      { texto: "¿Cuáles son las cuatro dimensiones de restauración en este capítulo?", opciones: ["Orar, ayunar, servir, dar", "Soltar, Gobierno, Formación, Reconciliación", "Confesar, arrepentirse, restaurar, avanzar", "Perdonar, olvidar, reconciliar, avanzar"], correcta: 1 },
+      { texto: "¿Qué respondió José cuando sus hermanos le temieron después de la muerte de Jacob? (Génesis 50:19-20)", opciones: ["'Merecen ser castigados por lo que me hicieron'", "'Salgan de mi presencia para siempre'", "'No temáis; Vosotros pensasteis mal contra mí, mas Dios lo encaminó a bien'", "'Les perdono solo si se arrepienten públicamente'"], correcta: 2 },
+      { texto: "¿Qué dice el capítulo que Dios es cuando somos difamados injustamente?", opciones: ["Nuestro consolador", "Nuestro vindicador", "Nuestro defensor público", "Nuestro juez"], correcta: 1 },
+      { texto: "¿Qué tuvo poder para vengarse pero eligió no hacerlo?", opciones: ["David frente a Saúl", "José frente a sus hermanos", "Daniel frente al rey", "Pedro frente a los que arrestaron a Jesús"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué produce el resentimiento?", opciones: ["Motivación para crecer", "Protección del corazón", "Atadura y limitación del propósito", "Sabiduría para el futuro"], correcta: 2 },
+      { texto: "¿Qué dice el capítulo sobre las decisiones tomadas con el corazón herido?", opciones: ["Suelen ser las más acertadas por la claridad emocional", "No deben tomarse porque la herida distorsiona el juicio", "Son más honestas que las tomadas en calma", "Solo aplican a líderes inmaduros"], correcta: 1 },
+      { texto: "Según la conclusión, ¿qué define nuestro futuro?", opciones: ["Lo que vivimos en el pasado", "Cómo decidimos responder a lo que vivimos", "Quiénes nos rodearon en el proceso", "Los errores que cometimos"], correcta: 1 },
+    ]
+  },
+  {
+    num: 5, nombre: "RESISTENCIA",
+    versiculo: '"La resistencia no es ausencia de tentación, es presencia de convicción." — LiderazGO',
+    preguntas: [
+      { texto: "¿Qué propuso Daniel en su corazón según Daniel 1:8?", opciones: ["Orar tres veces al día mirando hacia Jerusalén", "No contaminarse con la porción de comida del rey", "Ayunar por cuarenta días en Babilonia", "Resistir aprender el idioma de los caldeos"], correcta: 1 },
+      { texto: "¿Cuántos imperios distintos intentaron moldear a Daniel según el capítulo?", opciones: ["Dos", "Cuatro", "Tres", "Cinco"], correcta: 2 },
+      { texto: "¿Cuál fue el nombre que le pusieron a Daniel en Babilonia?", opciones: ["Sadrac", "Mesac", "Abed-nego", "Belsasar"], correcta: 3 },
+      { texto: "¿Qué dice el capítulo que hace la presión con el carácter?", opciones: ["Lo crea desde cero", "Lo destruye si no tienes fe", "Lo revela, no lo crea", "Lo moldea automáticamente"], correcta: 2 },
+      { texto: "Según Daniel 2:17-18, ¿qué hizo Daniel al saber que él y sus compañeros morirían?", opciones: ["Oró solo toda la noche en silencio", "Fue a decirles a Ananías, Misael y Azarías para orar juntos", "Confrontó directamente al rey", "Ayunó tres días sin contarle a nadie"], correcta: 1 },
+      { texto: "¿Qué describe el capítulo como la diferencia entre un 'termómetro' y un 'termostato' espiritual?", opciones: ["El termómetro ora más; el termostato ayuna más", "El termómetro refleja el ambiente; el termostato establece la temperatura espiritual", "El termómetro es más humilde; el termostato más activo", "Son estilos de personalidad espiritual"], correcta: 1 },
+      { texto: "¿Qué ocurrió en el foso de los leones según Daniel 6:22?", opciones: ["Los leones lo ignoraron porque estaba dormido", "Dios envió su ángel para cerrar la boca de los leones", "Los leones eran viejos y no podían atacar", "Daniel ayunó y eso detuvo a los leones"], correcta: 1 },
+      { texto: "Según el capítulo, ¿cuál es el verdadero problema con la tentación?", opciones: ["La fuerza de la tentación externa", "La falta de convicción interna", "No tener un líder que te supervise", "No leer suficiente la Biblia"], correcta: 1 },
+      { texto: "¿Qué dice el capítulo sobre las conexiones en la vida espiritual?", opciones: ["La conexión incorrecta debilita, la conexión correcta sostiene", "Todas las conexiones son neutras", "Solo las conexiones familiares importan", "Las conexiones no afectan tu vida espiritual"], correcta: 0 },
+      { texto: "¿Cuáles son las cuatro dimensiones de resistencia en este capítulo?", opciones: ["Oración, ayuno, Palabra, comunión", "Resistencia, Conexión, Identidad, Dominio", "Fe, esperanza, amor, paciencia", "Humildad, obediencia, fidelidad, visión"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué significa 'dominar el ambiente' espiritualmente?", opciones: ["Alejarse de todo ambiente secular", "Hacer que tu fe redefina el ambiente en lugar de ser moldeado por él", "Predicar constantemente en todo lugar", "Controlar quién entra y sale de tu entorno"], correcta: 1 },
+      { texto: "¿Qué dice la conclusión del capítulo sobre la resistencia verdadera?", opciones: ["Es solo permanecer sin rendirse", "Es permanecer con convicción, identidad y propósito", "Es huir de toda tentación", "Es tener más fe que los demás"], correcta: 1 },
+    ]
+  },
+  {
+    num: 6, nombre: "SERVICIO",
+    versiculo: '"Servir no es perder, es parecerse a Cristo." — LiderazGO',
+    preguntas: [
+      { texto: "¿Qué hizo Jesús cuando el leproso se acercó a Él en Mateo 8:1-3?", opciones: ["Le pidió que se alejara por las normas religiosas", "Extendió la mano, lo tocó y lo sanó", "Lo envió al sacerdote primero", "Oró por él desde la distancia"], correcta: 1 },
+      { texto: "¿Cuáles son las cuatro cualidades del servicio de Cristo descritas en el capítulo?", opciones: ["Amor, fe, esperanza, paciencia", "Disposición, Enfoque, Pasión, Voluntariedad", "Oración, ayuno, servicio, generosidad", "Humildad, obediencia, fidelidad, visión"], correcta: 1 },
+      { texto: "¿Qué declaró Jesús en Juan 4:34 sobre su propósito?", opciones: ["'Yo soy el camino, la verdad y la vida'", "'Mi comida es hacer la voluntad del que me envió, y terminar su obra'", "'El que quiera ser el primero, sea siervo de todos'", "'Venid a mí todos los que estáis trabajados'"], correcta: 1 },
+      { texto: "¿Qué dice Juan 2:17 sobre la pasión de Cristo?", opciones: ["'Yo soy la vid, vosotros los pámpanos'", "'El celo por tu casa me consume'", "'Amarás al Señor tu Dios con todo tu corazón'", "'Tengo sed'"], correcta: 1 },
+      { texto: "¿Qué dice Jesús en Juan 10:17-18 sobre su vida?", opciones: ["'Nadie tiene mayor amor que este'", "'Yo soy el buen pastor'", "'Yo pongo mi vida; nadie me la quita, sino que yo de mí mismo la pongo'", "'El Hijo del Hombre vino a buscar y salvar lo que se había perdido'"], correcta: 2 },
+      { texto: "¿Qué dijo Jesús en Getsemaní según Lucas 22:42?", opciones: ["'Hágase tu voluntad, no la mía'", "'Apartad de mí este cáliz si es tu voluntad'", "'No se haga mi voluntad, sino la tuya'", "'Estoy listo para morir por los pecados del mundo'"], correcta: 2 },
+      { texto: "Según el capítulo, ¿qué diferencia hay entre servir por emoción y servir por voluntariedad?", opciones: ["No hay diferencia práctica", "La emoción es más auténtica", "La voluntariedad es una decisión sostenida; la emoción es pasajera", "La emoción dura más tiempo"], correcta: 2 },
+      { texto: "¿Qué muestra Lucas 24:32 sobre la pasión de Cristo?", opciones: ["Que Jesús enseñaba sin emociones", "Que su pasión encendía el corazón de quienes lo escuchaban en el camino", "Que los discípulos no comprendían su mensaje", "Que solo los apóstoles podían recibir su fuego"], correcta: 1 },
+      { texto: "¿Qué dice el capítulo sobre las 'interrupciones' en el servicio?", opciones: ["Deben evitarse para mantener el enfoque", "Cada interrupción puede ser una asignación divina", "Son señal de falta de organización", "Revelan que no estás bien preparado"], correcta: 1 },
+      { texto: "¿Cuál es el valor de una vida según el capítulo?", opciones: ["Cuánto recibe y acumula", "Cuántos la reconocen y la siguen", "Cuánto entrega", "Cuántas posiciones ministeriales ocupa"], correcta: 2 },
+      { texto: "¿Qué dice el capítulo sobre el enfoque de Cristo en el servicio?", opciones: ["Reaccionaba a las necesidades del momento sin dirección", "Su vida fue una acumulación de actividades", "Tenía un enfoque inquebrantable alineado con la voluntad del Padre", "Solo servía cuando tenía energía y tiempo"], correcta: 2 },
+      { texto: "Según la conclusión del capítulo, ¿quién mejor sirve?", opciones: ["El que tiene más recursos", "El que tiene más talento ministerial", "El que más se parece a Jesús", "El que lleva más tiempo en la iglesia"], correcta: 2 },
+    ]
+  },
+  {
+    num: 7, nombre: "FIDELIDAD",
+    versiculo: '"La fidelidad que necesita audiencia no es fidelidad, es actuación." — David Wilkerson',
+    preguntas: [
+      { texto: "¿Qué respondió Rut a Noemí cuando esta le pidió que regresara con su pueblo? (Rut 1:16)", opciones: ["Que lo pensaría y le avisaría", "'A dondequiera que tú fueres, iré yo; tu pueblo será mi pueblo, y tu Dios mi Dios'", "Que la acompañaría solo hasta la frontera", "'Regresaré contigo pero solo si encuentro trabajo allá'"], correcta: 1 },
+      { texto: "¿Qué diferencia establece el capítulo entre Orfa y Rut?", opciones: ["Orfa era más joven; Rut más mayor", "Orfa decidió; Rut solo sintió", "Orfa sintió pero Rut decidió, y esa diferencia cambió destinos", "No hay diferencia significativa entre ambas"], correcta: 2 },
+      { texto: "¿Qué hacía Rut en el campo antes de ser reconocida públicamente? (Rut 2:3)", opciones: ["Trabajaba en el palacio del rey", "Espigaba en el campo en pos de los segadores", "Vendía artesanías en el mercado", "Enseñaba a los niños del pueblo"], correcta: 1 },
+      { texto: "¿De quién era el campo donde Rut espigó?", opciones: ["Del rey de Israel", "Del sumo sacerdote", "De Booz, pariente de Elimelec", "Del hermano de Noemí"], correcta: 2 },
+      { texto: "¿Qué dice el capítulo sobre la honra en el Reino?", opciones: ["Se persigue con esfuerzo y trabajo", "Se compra con servicio constante", "No se persigue, se recibe como consecuencia de la fidelidad", "Se alcanza cuando llevas suficiente tiempo en el ministerio"], correcta: 2 },
+      { texto: "Rut 4:13 dice que Booz tomó a Rut como esposa. ¿Qué restauró eso en la vida de Rut?", opciones: ["Solo provisión económica", "Solo un nombre en la sociedad", "Identidad, cobertura, provisión y futuro", "Solo una casa donde vivir"], correcta: 2 },
+      { texto: "Según Mateo 1:1-6, ¿en qué linaje quedó incluida Rut gracias a su fidelidad?", opciones: ["El linaje de Abraham solamente", "El linaje del rey Salomón", "El linaje de Jesucristo, el Mesías", "El linaje de los profetas de Israel"], correcta: 2 },
+      { texto: "¿Qué dice Jesús en Mateo 9:37-38 que el capítulo usa para hablar de la diligencia?", opciones: ["'El que quiera ser el primero, sea siervo de todos'", "'A la verdad la mies es mucha, mas los obreros pocos'", "'Bienaventurados los que trabajan en el campo del Señor'", "'Id y haced discípulos a todas las naciones'"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué construye la fidelidad en lo pequeño?", opciones: ["Fama y reconocimiento inmediato", "El camino hacia la honra de Dios", "Una carrera ministerial exitosa", "Conexiones con personas influyentes"], correcta: 1 },
+      { texto: "¿Qué afirma el capítulo sobre el legado?", opciones: ["Se construye con grandes actos visibles", "Se forma con pequeñas decisiones sostenidas a lo largo del tiempo", "Solo lo pueden dejar los grandes líderes", "Depende de cuántos te reconocen"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué define la verdadera fidelidad?", opciones: ["Lo que sientes en los momentos de emoción", "Lo que decides sostener a lo largo del tiempo", "Los resultados inmediatos que ves", "El reconocimiento que recibes"], correcta: 1 },
+      { texto: "Según la conclusión del capítulo, ¿qué cambió el destino de Rut?", opciones: ["Sus habilidades y talentos especiales", "Sus conexiones con personas influyentes", "Su fidelidad constante, no su posición", "Haber nacido en el momento correcto"], correcta: 2 },
+    ]
+  },
+  {
+    num: 8, nombre: "VISIÓN",
+    versiculo: '"No fui rebelde a la visión celestial." — Hechos 26:19',
+    preguntas: [
+      { texto: "¿Qué le ocurrió a Saulo en el camino a Damasco según Hechos 9:3-5?", opciones: ["Tuvo un sueño profético mientras dormía", "Un resplandor de luz del cielo lo rodeó y una voz le habló", "Encontró una carta con un llamado de Dios", "Un profeta lo detuvo y le dio una palabra"], correcta: 1 },
+      { texto: "¿Qué afirma el capítulo que tenía Saulo antes de su encuentro pero le faltaba?", opciones: ["Tenía conocimiento pero le faltaba humildad", "Tenía pasión pero le faltaba visión", "Tenía fe pero le faltaba obediencia", "Tenía talento pero le faltaba disciplina"], correcta: 1 },
+      { texto: "¿Cuáles son las cuatro cualidades de la visión según este capítulo?", opciones: ["Sueño, confirmación, proceso, cumplimiento", "Encuentro, Obediencia, Consistencia, Reproducción", "Llamado, formación, envío, multiplicación", "Fe, esperanza, oración, acción"], correcta: 1 },
+      { texto: "¿Qué declaró Pablo en Hechos 26:19 ante el rey Agripa?", opciones: ["'He dedicado mi vida a servir a los pobres'", "'No fui rebelde a la visión celestial'", "'Estoy dispuesto a morir por el evangelio'", "'El Señor me llamó desde mi nacimiento'"], correcta: 1 },
+      { texto: "¿Qué dice el capítulo en Hechos 13:47 sobre la asignación de Pablo?", opciones: ["'Serás apóstol solo a Israel'", "'Predicarás solamente en Roma'", "'Te he puesto para luz de los gentiles, a fin de que seas salvación hasta lo último de la tierra'", "'Fundarás iglesias en toda Asia Menor'"], correcta: 2 },
+      { texto: "Según 2 Corintios 11:24-26, ¿qué enfrentó Pablo por sostener su visión?", opciones: ["Solo rechazo social y críticas verbales", "Azotes, naufragios, peligros y persecuciones", "Solo prisión por pocos días", "Expulsión de las sinagogas únicamente"], correcta: 1 },
+      { texto: "¿Qué dice Filipenses 3:14 que el capítulo usa para mostrar la consistencia de Pablo?", opciones: ["'Todo lo puedo en Cristo que me fortalece'", "'Prosigo a la meta, al premio del supremo llamamiento de Dios'", "'Para mí el vivir es Cristo y el morir es ganancia'", "'He aprendido a contentarme en cualquier estado'"], correcta: 1 },
+      { texto: "¿Qué dice 2 Timoteo 2:2 sobre la reproducción de la visión?", opciones: ["'Proclama la Palabra a tiempo y fuera de tiempo'", "'Lo que has oído de mí... encarga a hombres fieles que sean idóneos para enseñar también a otros'", "'Guarda el buen depósito que te fue encomendado'", "'Cumple tu ministerio en toda circunstancia'"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué convierte la visión en impacto?", opciones: ["La creatividad y el talento del líder", "La obediencia sin reservas", "El tamaño de la congregación", "El apoyo financiero recibido"], correcta: 1 },
+      { texto: "¿Qué dice el capítulo que hace la rebelión con la visión?", opciones: ["La fortalece para el futuro", "La retrasa pero no la detiene", "La puede ignorar, diluir o abandonar", "La convierte en algo mejor con el tiempo"], correcta: 2 },
+      { texto: "¿Qué describe el capítulo como 'la evidencia de una visión madura'?", opciones: ["Tener muchos seguidores en redes sociales", "La reproducción: multiplicar la visión en otros", "Alcanzar a miles de personas en eventos", "Construir un gran ministerio visible"], correcta: 1 },
+      { texto: "Según la conclusión, ¿de qué se trata la verdadera visión?", opciones: ["De lo que ves y cómo lo compartes", "De cómo caminas en ella y cómo impactas generaciones", "De tener sueños espirituales frecuentes", "De recibir una profecía confirmada"], correcta: 1 },
+    ]
+  },
+  {
+    num: 9, nombre: "UNIDAD",
+    versiculo: '"Cuando la iglesia se une, el cielo responde." — Leonard Ravenhill',
+    preguntas: [
+      { texto: "¿Cuántos hombres tenía Gedeón al inicio y a cuántos los redujo Dios?", opciones: ["De 10,000 a 100", "De 33,000 a 300", "De 50,000 a 1,000", "De 33,000 a 3,000"], correcta: 1 },
+      { texto: "Según el capítulo, ¿por qué Dios redujo el ejército de Gedeón?", opciones: ["Porque no todos sabían pelear", "Porque no buscaba multitudes sino convencidos", "Porque no tenían las armas correctas", "Porque el campamento enemigo era pequeño"], correcta: 1 },
+      { texto: "¿Cuáles son las cuatro dimensiones de unidad descritas en el capítulo?", opciones: ["Amor, concordia, paz, armonía", "Convicción, Sincronización, Quebrantamiento, Perseverancia", "Fe, oración, ayuno, comunión", "Humildad, obediencia, servicio, fidelidad"], correcta: 1 },
+      { texto: "¿Qué tomaron los 300 en cada mano según Jueces 7:20?", opciones: ["Espada en la derecha y escudo en la izquierda", "Teas en la mano izquierda y trompetas en la derecha", "Lanzas en ambas manos", "Palos en la derecha y piedras en la izquierda"], correcta: 1 },
+      { texto: "¿Qué simboliza el cántaro roto en la batalla de Gedeón según el capítulo?", opciones: ["La destrucción del enemigo", "El quebrantamiento personal que permite que la luz de Dios salga", "La pobreza del ejército israelita", "El sacrificio que Gedeón hizo a Dios"], correcta: 1 },
+      { texto: "¿Qué dice Jueces 8:4 sobre el estado de los 300 hombres?", opciones: ["Estaban descansados y listos para continuar", "Habían abandonado a Gedeón", "Estaban cansados, mas todavía persiguiendo", "Habían derrotado completamente al enemigo"], correcta: 2 },
+      { texto: "Según el capítulo, ¿qué hace la unidad madura cuando llega el cansancio?", opciones: ["Se rompe inevitablemente", "Se fortalece en ella", "Se detiene hasta recuperar fuerzas", "Se divide en grupos más pequeños"], correcta: 1 },
+      { texto: "¿Qué es la sincronización según el capítulo?", opciones: ["Orar todos al mismo tiempo", "La evidencia visible de una unidad madura: moverse todos juntos en el tiempo correcto", "Cantar el mismo coro en la iglesia", "Reunirse a la misma hora cada semana"], correcta: 1 },
+      { texto: "¿Qué dice el capítulo que ocurre cuando el 'yo' se rinde en la unidad?", opciones: ["La persona pierde su individualidad", "La luz se limita más", "La luz se multiplica y Dios se manifiesta", "El grupo se vuelve más dependiente del líder"], correcta: 2 },
+      { texto: "Según el capítulo, ¿qué diferencia hay entre unidad con convicción y unidad sin convicción?", opciones: ["No hay diferencia práctica", "La unidad sin convicción es inquebrantable", "La unidad sin convicción es frágil; con convicción es inquebrantable", "La convicción no afecta la calidad de la unidad"], correcta: 2 },
+      { texto: "¿Qué dice el capítulo que el quebrantamiento NO es?", opciones: ["La puerta para que la vida de Dios fluya", "El momento donde el yo deja de gobernar", "Algo que te disminuye o te limita", "Una rendición interior necesaria"], correcta: 2 },
+      { texto: "Según la conclusión del capítulo, ¿qué desata Dios donde hay unidad real?", opciones: ["Solo paz y tranquilidad", "Poder, orden y victoria completa", "Riquezas y prosperidad", "Éxito numérico en la congregación"], correcta: 1 },
+    ]
+  },
+  {
+    num: 10, nombre: "PASIÓN",
+    versiculo: '"Hirviendo en el espíritu, sirviendo al Señor." — Romanos 12:11',
+    preguntas: [
+      { texto: "¿Cómo describe Hechos 18:24 a Apolos?", opciones: ["Como un hombre rico y famoso", "Como un hombre elocuente, poderoso en las Escrituras", "Como un discípulo de Juan el Bautista", "Como el más humilde de los creyentes"], correcta: 1 },
+      { texto: "¿Qué significa 'dynatos' (poderoso) según el capítulo?", opciones: ["Conocimiento teórico de la Biblia", "Fuerza, capacidad y habilidad demostrada en acción", "Un don espiritual especial", "Un título religioso reconocido"], correcta: 1 },
+      { texto: "¿Qué significa la expresión griega 'zéon tó pneumati' usada en Hechos 18:25?", opciones: ["Lleno del Espíritu Santo", "Hirviendo en el espíritu", "Caminando en el espíritu", "Ungido por el espíritu"], correcta: 1 },
+      { texto: "¿Quiénes corrigieron a Apolos y cómo respondió él?", opciones: ["Los apóstoles lo reprendieron y él se defendió", "Priscila y Aquila lo tomaron aparte y le expusieron el camino de Dios más exactamente; él escuchó", "Los ancianos de la iglesia lo expulsaron temporalmente", "El apóstol Pablo lo confrontó públicamente"], correcta: 1 },
+      { texto: "¿Qué dice Proverbios 9:9 que el capítulo usa para hablar de la enseñabilidad?", opciones: ["'El sabio teme al Señor y se aparta del mal'", "'Da al sabio, y será más sabio; enseña al justo, y aumentará su saber'", "'El principio de la sabiduría es el temor del Señor'", "'El necio desprecia la instrucción de su padre'"], correcta: 1 },
+      { texto: "¿Qué dice 1 Corintios 3:6 sobre la relación entre Pablo y Apolos?", opciones: ["'Pablo plantó y Apolos cosechó'", "'Yo planté, Apolos regó; pero el crecimiento lo ha dado Dios'", "'Pablo y Apolos compitieron por la misma congregación'", "'Apolos plantó y Pablo construyó sobre eso'"], correcta: 1 },
+      { texto: "Según el capítulo, ¿cuál es la diferencia entre un termómetro y un termostato espiritual?", opciones: ["El termómetro ora más; el termostato ayuna más", "El termómetro refleja la temperatura del ambiente; el termostato la establece", "Son metáforas para distintos dones espirituales", "El termómetro es más apasionado; el termostato más reflexivo"], correcta: 1 },
+      { texto: "¿Qué muestra Hechos 18:27-28 sobre el impacto de Apolos en Acaya?", opciones: ["Que su visita no tuvo mayor impacto", "Que fue de gran provecho y refutaba públicamente a los judíos demostrando que Jesús era el Cristo", "Que predicó pero pocos le creyeron", "Que solo enseñó en las sinagogas"], correcta: 1 },
+      { texto: "¿Cuáles son las cuatro dimensiones de la pasión según este capítulo?", opciones: ["Oración, ayuno, Palabra, servicio", "Fuego, Ferviente, Enseñable, Movimiento", "Amor, celo, entrega, perseverancia", "Humildad, obediencia, fidelidad, visión"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué hace la pasión que no se comparte?", opciones: ["Se purifica más", "Se fortalece con el tiempo", "Se desgasta", "Se convierte en sabiduría"], correcta: 2 },
+      { texto: "¿Qué afirma el capítulo que el fervor espiritual NO es?", opciones: ["Un estado constante del alma", "Una disciplina que se cultiva en lo secreto", "Una personalidad con la que se nace o no", "Algo que se mantiene aun cuando nadie mira"], correcta: 2 },
+      { texto: "Según la conclusión del capítulo, ¿qué hace un discípulo y líder verdaderamente apasionado?", opciones: ["Solo conoce, siente y enseña", "Vive, arde, aprende y multiplica", "Acumula conocimiento y enseña a otros", "Predica con emoción en cada servicio"], correcta: 1 },
+    ]
+  },
+  {
+    num: 11, nombre: "INFLUENCIA",
+    versiculo: '"La influencia más poderosa no viene de la posición, sino de la vida que reflejas." — Billy Graham',
+    preguntas: [
+      { texto: "¿Cómo describe 1 Reyes 21:25 la maldad de Acab?", opciones: ["Como el segundo rey más malo de Israel", "Como ninguno que se vendió para hacer lo malo ante los ojos de Jehová, incitado por Jezabel", "Como alguien que solo seguía las órdenes de Jezabel", "Como un rey que adoraba a muchos dioses ocasionalmente"], correcta: 1 },
+      { texto: "¿Por cuánto tiempo oró Elías para que no lloviera y no llovió? (Santiago 5:17-18)", opciones: ["Un año y seis meses", "Siete años", "Tres años y seis meses", "Cuarenta días y cuarenta noches"], correcta: 2 },
+      { texto: "¿Qué ocurrió en 1 Reyes 18:38 cuando Elías oró?", opciones: ["Cayó lluvia en todo Israel", "Cayó fuego de Jehová y consumió el holocausto, la leña, las piedras y el polvo", "El altar se rompió en pedazos", "Los 850 profetas reconocieron su error"], correcta: 1 },
+      { texto: "¿Cuáles son las cuatro dimensiones de influencia en este capítulo?", opciones: ["Autoridad, posición, conocimiento, liderazgo", "Fuego, Transformación, Multiplicación, Intimidad", "Visión, misión, valores, estrategia", "Oración, ayuno, Palabra, servicio"], correcta: 1 },
+      { texto: "¿Qué instruyó Dios a Elías hacer según 1 Reyes 19:15-16?", opciones: ["Regresar a confrontar a Acab de nuevo", "Huir a otro país y descansar", "Ungir a Hazael como rey de Siria, a Jehú como rey de Israel, y a Eliseo como profeta en su lugar", "Reunir a todos los profetas de Israel"], correcta: 2 },
+      { texto: "¿Cuál dice el capítulo que fue el acto más impactante de Elías?", opciones: ["Hacer descender fuego del cielo", "Cerrar los cielos por tres años y medio", "Lanzar su manto sobre Eliseo", "Confrontar al rey Acab directamente"], correcta: 2 },
+      { texto: "Según 2 Reyes 2:11, ¿cómo fue llevado Elías al cielo?", opciones: ["En un carro de oro", "En un torbellino de viento", "En una nube de gloria", "En un carro de fuego con caballos de fuego, en un torbellino"], correcta: 3 },
+      { texto: "¿Qué dice el capítulo sobre la influencia que se construye solo hacia afuera?", opciones: ["Es la más poderosa y duradera", "Es lo que Dios más valora", "Es frágil; solo la que se construye hacia arriba permanece", "Es igual de sólida si hay talento"], correcta: 2 },
+      { texto: "Según el capítulo, ¿qué diferencia a Elías de un líder que solo busca influencia por posición?", opciones: ["Que tenía más talento y elocuencia", "Que tenía un fuego interno que lo impulsaba a declarar la verdad sin necesitar ejército ni respaldo institucional", "Que contaba con el apoyo del pueblo", "Que tenía más años de experiencia ministerial"], correcta: 1 },
+      { texto: "¿Qué dice el capítulo sobre la influencia espiritual y los escenarios públicos?", opciones: ["La influencia nace en los grandes escenarios públicos", "La influencia nace en altares, en lo secreto, no en escenarios", "Los escenarios grandes multiplican la influencia automáticamente", "La influencia pública es más importante que la privada"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué hizo Elías con la crisis de sentirse solo?", opciones: ["Dejó el ministerio permanentemente", "Buscó otro profeta para que lo reemplazara", "Dios lo redirigió a ungir a tres personas para multiplicar su influencia", "Regresó a Jezreel a confrontar a Jezabel"], correcta: 2 },
+      { texto: "Según la conclusión del capítulo, ¿cómo se mide la verdadera influencia?", opciones: ["Por cuántos la siguen momentáneamente", "Por cuánto impactas en los grandes eventos", "Por cuánto dejas establecido eternamente en otros", "Por los premios y reconocimientos recibidos"], correcta: 2 },
+    ]
+  },
+  {
+    num: 12, nombre: "MULTIPLICACIÓN",
+    versiculo: '"No es cuántos te siguen, sino cuántos puedes formar y enviar." — LiderazGO',
+    preguntas: [
+      { texto: "¿Quiénes se juntaron con David en la cueva de Adulam según 1 Samuel 22:1-2?", opciones: ["Los mejores guerreros de Israel", "Hombres afligidos, endeudados y en amargura de espíritu", "Los sacerdotes y profetas del reino", "Los hermanos y familia del rey"], correcta: 1 },
+      { texto: "¿Cuántos hombres se juntaron con David en la cueva de Adulam?", opciones: ["Cien hombres", "Doscientos hombres", "Cuatrocientos hombres", "Mil hombres"], correcta: 2 },
+      { texto: "¿Cuáles son las cuatro dimensiones de multiplicación descritas en el capítulo?", opciones: ["Evangelismo, discipulado, plantación, misiones", "Academia, Transferencia, Relación, Rompimiento", "Formación, envío, multiplicación, expansión", "Visión, misión, estrategia, resultados"], correcta: 1 },
+      { texto: "¿Qué hazaña realizó Adino el eznita según 2 Samuel 23:8?", opciones: ["Derrotó a un ejército de cien hombres", "Mató a ochocientos hombres en una sola ocasión", "Defendió una ciudad él solo por tres días", "Derrotó al gigante Goliat en revancha"], correcta: 1 },
+      { texto: "¿Qué hizo Eleazar hijo de Dodo según 2 Samuel 23:9-10?", opciones: ["Cruzó el río Jordán solo para espiar", "Peleó contra los filisteos hasta que su mano se cansó y quedó pegada a la espada", "Detuvo solo a un ejército de cien hombres", "Salvó al rey David de una emboscada"], correcta: 1 },
+      { texto: "¿Qué dice 1 Crónicas 12:22 sobre el crecimiento del ejército de David?", opciones: ["Que creció lentamente durante diez años", "Que de día en día venían a David para ayudarle, hasta hacerse un gran ejército, como ejército de Dios", "Que David tuvo que reclutar por la fuerza", "Que nunca llegó a ser un ejército grande"], correcta: 1 },
+      { texto: "En 2 Samuel 23:16-17, ¿por qué los tres valientes arriesgaron su vida para traer agua a David?", opciones: ["Porque David se los ordenó bajo pena de muerte", "Porque una profecía les indicó que debían hacerlo", "Nadie los ordenó; fue una respuesta de amor y lealtad a David", "Porque era su turno de guardia ese día"], correcta: 2 },
+      { texto: "¿Qué hizo David con el agua que sus valientes le trajeron arriesgando su vida?", opciones: ["La bebió con gratitud y los recompensó", "La utilizó para el sacrificio en el altar", "La derramó para Jehová, diciendo que no podía beber la sangre de sus hombres", "La guardó como símbolo de su victoria"], correcta: 2 },
+      { texto: "Según 2 Samuel 21:19-22, ¿qué superaron los hombres de David al final del proceso de formación?", opciones: ["Los ejércitos de todos los reinos vecinos", "Gigantes en Gat, algo que toda una nación creía imposible", "Al ejército del rey Saúl", "A los 850 profetas de Baal"], correcta: 1 },
+      { texto: "¿Qué afirma el capítulo sobre la multiplicación de identidad?", opciones: ["Las personas crecen solo por lo que aprenden intelectualmente", "Las personas crecen por la identidad que reciben y lo que constantemente se les afirma", "La identidad no puede transferirse, es innata", "Solo los líderes ungidos pueden transferir identidad"], correcta: 1 },
+      { texto: "Según el capítulo, ¿qué evidencia que la multiplicación se completó?", opciones: ["Que el líder tiene muchos seguidores", "Que la iglesia creció en número", "Que los discípulos pueden hacer lo que el líder ya no puede y van más lejos", "Que el ministerio es reconocido internacionalmente"], correcta: 2 },
+      { texto: "Según la conclusión del capítulo, ¿cómo se mide la multiplicación verdadera?", opciones: ["Por cuántos dependen de ti", "Por el tamaño de tu ministerio visible", "Por cuántos pueden avanzar, crecer y multiplicar sin ti", "Por cuántas personas conoces en otros países"], correcta: 2 },
+    ]
+  }
+];
+
+// ─── ESTADO ────────────────────────────────────────────────────────────────
+let capActual = 0;
+let selecciones = {};
+let verificado = false;
+
+// ─── INICIALIZACIÓN ────────────────────────────────────────────────────────
+function init() {
+  const selector = document.getElementById('selectorCaps');
+  selector.innerHTML = CAPITULOS.map((c, i) =>
+    `<button onclick="cambiarCap(${i})" id="btnCap${i}" class="${i===0?'active':''}">${c.num}. ${c.nombre}</button>`
+  ).join('');
+  renderCap();
+}
+
+function cambiarCap(idx) {
+  capActual = idx;
+  selecciones = {};
+  verificado = false;
+  document.querySelectorAll('.chapter-selector button').forEach((b,i) => b.classList.toggle('active', i===idx));
+  renderCap();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function renderCap() {
+  const cap = CAPITULOS[capActual];
+
+  document.getElementById('capHeader').innerHTML = `
+    <div class="cap-num">Capítulo ${cap.num}</div>
+    <div class="cap-titulo">${cap.nombre}</div>
+    <div class="cap-versiculo">${cap.versiculo}</div>
+  `;
+
+  actualizarProgreso();
+
+  const container = document.getElementById('preguntasContainer');
+  container.innerHTML = cap.preguntas.map((p, pi) => `
+    <div class="pregunta-card" id="card${pi}">
+      <div class="pregunta-num">PREGUNTA ${pi+1} DE 12</div>
+      <div class="pregunta-texto">${p.texto}</div>
+      <div class="opciones">
+        ${p.opciones.map((op, oi) => `
+          <div class="opcion" id="op_${pi}_${oi}" onclick="seleccionar(${pi}, ${oi})">
+            <div class="opcion-letra">${String.fromCharCode(65+oi)}</div>
+            <div class="opcion-texto">${op}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="feedback" id="fb${pi}"></div>
+    </div>
+  `).join('');
+
+  document.getElementById('resultadoFinal').classList.remove('visible');
+  document.getElementById('btnVerificar').disabled = true;
+  document.getElementById('btnVerificar').textContent = 'Verificar Respuestas';
+}
+
+function seleccionar(pregIdx, opIdx) {
+  if (verificado) return;
+  const cap = CAPITULOS[capActual];
+  const antes = selecciones[pregIdx];
+
+  // Deseleccionar anterior
+  if (antes !== undefined) {
+    document.getElementById(`op_${pregIdx}_${antes}`).classList.remove('seleccionada');
+  }
+
+  selecciones[pregIdx] = opIdx;
+  document.getElementById(`op_${pregIdx}_${opIdx}`).classList.add('seleccionada');
+
+  actualizarProgreso();
+
+  const respondidas = Object.keys(selecciones).length;
+  document.getElementById('btnVerificar').disabled = respondidas < cap.preguntas.length;
+}
+
+function actualizarProgreso() {
+  const total = CAPITULOS[capActual].preguntas.length;
+  const resp = Object.keys(selecciones).length;
+  const pct = (resp / total) * 100;
+  document.getElementById('progresoBar').style.width = pct + '%';
+  document.getElementById('progresoTxt').textContent = `${resp} / ${total} respondidas`;
+}
+
+function verificar() {
+  const cap = CAPITULOS[capActual];
+  verificado = true;
+  let correctas = 0;
+
+  cap.preguntas.forEach((p, pi) => {
+    const sel = selecciones[pi];
+    const card = document.getElementById(`card${pi}`);
+    const fb = document.getElementById(`fb${pi}`);
+    const esCorrecta = sel === p.correcta;
+
+    if (esCorrecta) correctas++;
+
+    // Bloquear todas las opciones
+    p.opciones.forEach((_, oi) => {
+      const el = document.getElementById(`op_${pi}_${oi}`);
+      el.classList.add('bloqueada');
+      if (oi === p.correcta) el.classList.add('correcta');
+      if (oi === sel && !esCorrecta) el.classList.add('incorrecta-sel');
+    });
+
+    card.classList.toggle('respondida', esCorrecta);
+    card.classList.toggle('incorrecta', !esCorrecta);
+
+    fb.className = `feedback ${esCorrecta ? 'correcto' : 'incorrecto'}`;
+    fb.innerHTML = esCorrecta
+      ? `<span class="icono">✓</span> ¡Correcto!`
+      : `<span class="icono">✗</span> Incorrecto. La respuesta correcta es: <strong>${p.opciones[p.correcta]}</strong>`;
+  });
+
+  // Resultado final
+  const pct = Math.round((correctas / cap.preguntas.length) * 100);
+  const nivel = pct >= 85 ? 'excelente' : pct >= 60 ? 'bien' : 'mejorar';
+  const msgs = {
+    excelente: `¡Excelente trabajo! Demostraste que leíste y comprendiste bien el capítulo de <strong>${cap.nombre}</strong>. ¡Sigue adelante con el próximo!`,
+    bien: `Buen esfuerzo. Comprendiste la mayor parte del capítulo de <strong>${cap.nombre}</strong>. Te recomendamos releer las secciones donde tuviste dificultad.`,
+    mejorar: `Te invitamos a releer el capítulo de <strong>${cap.nombre}</strong> antes de continuar. Cada principio es importante para tu formación.`
+  };
+
+  const res = document.getElementById('resultadoFinal');
+  res.innerHTML = `
+    <div class="resultado-titulo">Resultado del Capítulo ${cap.num}: ${cap.nombre}</div>
+    <div class="resultado-score ${nivel}">${pct}%</div>
+    <div class="resultado-detalle">
+      <div class="detalle-item"><div class="detalle-num verde">${correctas}</div><div class="detalle-label">Correctas</div></div>
+      <div class="detalle-item"><div class="detalle-num rojo">${cap.preguntas.length - correctas}</div><div class="detalle-label">Incorrectas</div></div>
+      <div class="detalle-item"><div class="detalle-num" style="color:#7BBFDC">12</div><div class="detalle-label">Total</div></div>
+    </div>
+    <div class="resultado-msg">${msgs[nivel]}</div>
+    ${capActual < CAPITULOS.length - 1 ? `<button class="btn btn-verificar" onclick="cambiarCap(${capActual+1})" style="margin-right:10px">Siguiente Capítulo →</button>` : ''}
+    <button class="btn btn-reiniciar" onclick="reiniciar()">Intentar de nuevo</button>
+  `;
+  res.classList.add('visible');
+
+  document.getElementById('btnVerificar').disabled = true;
+  document.getElementById('btnVerificar').textContent = '✓ Verificado';
+
+  res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function reiniciar() {
+  selecciones = {};
+  verificado = false;
+  renderCap();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+init();
+</script>
+</body>
+</html>
