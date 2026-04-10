@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VISIÓN — LiderazGO</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0D1B2A;color:#eee;min-height:100vh}
+
+.topbar{background:#0A1628;border-bottom:1px solid #1a3a5a;padding:12px 20px;display:flex;align-items:center;gap:12px}
+.back-btn{display:flex;align-items:center;gap:6px;color:#2DBF72;font-size:13px;font-weight:700;text-decoration:none;transition:opacity .2s}
+.back-btn:hover{opacity:.75}
+.topbar-titulo{font-size:13px;color:#557799;letter-spacing:1px}
+
+.hero{background:linear-gradient(135deg,#0A1628 0%,#0D2240 60%,#071018 100%);padding:32px 20px 28px;text-align:center;border-bottom:4px solid #1B6B3A}
+.cap-eyebrow{font-size:10px;letter-spacing:4px;color:#2DBF72;text-transform:uppercase;margin-bottom:8px}
+.cap-h1{font-size:clamp(1.8rem,5vw,2.6rem);font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:10px}
+.cap-intro{font-size:13px;color:#7BBFDC;max-width:520px;margin:0 auto;line-height:1.7}
+
+.main{max-width:720px;margin:0 auto;padding:28px 16px 80px}
+
+.contador{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding:12px 18px;background:#0E1E30;border:1px solid #1a3a5a;border-radius:10px}
+.contador-texto{font-size:13px;color:#7BBFDC}
+.contador-correctas{font-size:13px;font-weight:700;color:#2DBF72}
+
+.pregunta-wrap{display:none}
+.pregunta-wrap.activa{display:block}
+
+.pregunta-card{background:#0E1E30;border:1.5px solid #1a3a5a;border-radius:14px;padding:26px 24px;margin-bottom:16px}
+.pregunta-num{display:inline-block;background:#1B6B3A;color:#fff;font-size:10px;font-weight:700;padding:3px 11px;border-radius:12px;letter-spacing:2px;margin-bottom:12px}
+.pregunta-texto{font-size:15px;color:#e8e8e8;line-height:1.75;font-weight:500;margin-bottom:20px}
+
+.opciones{display:flex;flex-direction:column;gap:10px}
+.opcion{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;background:#0A1628;border:1.5px solid #1a3a5a;border-radius:9px;cursor:pointer;transition:all .2s;user-select:none}
+.opcion:hover:not(.bloqueada){border-color:#2DBF72;background:#0d2018}
+.opcion.seleccionada{border-color:#2DBF72;background:#0d2018}
+.opcion.correcta{border-color:#2DBF72;background:#0a2014}
+.opcion.incorrecta-sel{border-color:#c0392b;background:#200a0a}
+.opcion.bloqueada{cursor:default}
+.opcion-letra{min-width:28px;height:28px;border-radius:50%;background:#162030;border:1.5px solid #2a4060;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#7BBFDC;flex-shrink:0;transition:all .2s}
+.opcion.seleccionada .opcion-letra,.opcion.correcta .opcion-letra{background:#1B6B3A;border-color:#2DBF72;color:#fff}
+.opcion.incorrecta-sel .opcion-letra{background:#c0392b;border-color:#e74c3c;color:#fff}
+.opcion-texto{font-size:14px;color:#ccc;line-height:1.6;padding-top:3px}
+
+.feedback-wrap{display:none;margin-top:16px}
+.feedback-wrap.visible{display:block}
+.feedback{padding:16px 18px;border-radius:10px;font-size:13px;line-height:1.7}
+.feedback.correcto{background:#0a2014;border:1px solid #1B6B3A;color:#8fdfaa}
+.feedback.incorrecto{background:#200a0a;border:1px solid #8b2020;color:#e8a0a0}
+.fb-encabezado{font-weight:800;margin-bottom:6px;font-size:14px}
+.fb-encabezado.c{color:#2DBF72}
+.fb-encabezado.i{color:#e74c3c}
+.fb-reflexion{font-style:italic;margin-top:6px;color:#99b0aa;font-size:12.5px;border-top:1px solid rgba(255,255,255,.07);padding-top:8px;margin-top:10px}
+
+.nav-btns{display:flex;gap:10px;margin-top:20px}
+.btn{flex:1;padding:13px 20px;border:none;border-radius:25px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+.btn-prev{background:transparent;color:#7BBFDC;border:1.5px solid #1a3a5a}
+.btn-prev:hover{border-color:#7BBFDC;color:#fff}
+.btn-prev:disabled{opacity:.3;cursor:default}
+.btn-next{background:linear-gradient(135deg,#1B6B3A,#2DBF72);color:#fff}
+.btn-next:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(45,191,114,.35)}
+.btn-next:disabled{opacity:.4;cursor:default;transform:none}
+
+/* RESULTADO */
+.resultado{display:none;text-align:center;background:#0E1E30;border:2px solid #2DBF72;border-radius:16px;padding:36px 24px}
+.resultado.visible{display:block}
+.res-eyebrow{font-size:10px;letter-spacing:3px;color:#2DBF72;text-transform:uppercase;margin-bottom:10px}
+.res-score{font-size:4rem;font-weight:900;margin:14px 0 6px}
+.res-score.excelente{color:#2DBF72}
+.res-score.bien{color:#F4D03F}
+.res-score.mejorar{color:#E74C3C}
+.res-versiculo{font-size:13px;color:#557799;font-style:italic;max-width:440px;margin:0 auto 20px;line-height:1.6}
+.res-detalle{display:flex;justify-content:center;gap:20px;margin-bottom:24px;flex-wrap:wrap}
+.res-item{background:#0A1628;padding:14px 20px;border-radius:10px;text-align:center;min-width:90px}
+.res-num{font-size:1.8rem;font-weight:900}
+.res-num.v{color:#2DBF72}
+.res-num.r{color:#e74c3c}
+.res-label{font-size:11px;color:#7BBFDC;margin-top:3px}
+.res-msg{font-size:14px;color:#8899aa;max-width:460px;margin:0 auto 24px;line-height:1.7}
+
+.res-btns{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.btn-reiniciar{padding:11px 24px;background:transparent;color:#7BBFDC;border:1.5px solid #1a3a5a;border-radius:25px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-reiniciar:hover{border-color:#7BBFDC;color:#fff}
+.btn-siguiente{padding:11px 24px;background:linear-gradient(135deg,#1B6B3A,#2DBF72);color:#fff;border:none;border-radius:25px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+.btn-siguiente:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(45,191,114,.35)}
+.btn-ver-todos{padding:11px 24px;background:transparent;color:#7BBFDC;border:1.5px solid #1a3a5a;border-radius:25px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+.btn-ver-todos:hover{border-color:#7BBFDC;color:#fff}
+
+/* COMPARTIR */
+.compartir-sep{height:1px;background:#1a3a5a;margin:20px 0}
+.compartir-titulo{font-size:11px;letter-spacing:3px;color:#557799;text-transform:uppercase;margin-bottom:16px}
+.compartir-btns{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.c-btn{display:flex;align-items:center;gap:7px;padding:10px 18px;border-radius:25px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s}
+.c-email{background:#1a3a6a;color:#fff}
+.c-email:hover{background:#1B4F99}
+.c-sms{background:#1B6B3A;color:#fff}
+.c-sms:hover{background:#2DBF72;color:#000}
+.c-copy{background:#2a2a4a;color:#fff}
+.c-copy:hover{background:#3a3a7a}
+
+/* MODAL COMPARTIR */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:#0E1E30;border:1.5px solid #1a3a5a;border-radius:16px;padding:28px;max-width:420px;width:100%}
+.modal-titulo{font-size:15px;font-weight:800;color:#fff;margin-bottom:6px}
+.modal-sub{font-size:12px;color:#557799;margin-bottom:20px}
+.modal-label{font-size:12px;color:#7BBFDC;margin-bottom:6px;display:block}
+.modal-input{width:100%;padding:11px 14px;background:#0A1628;border:1.5px solid #1a3a5a;border-radius:8px;color:#fff;font-size:14px;margin-bottom:14px;outline:none;transition:border-color .2s}
+.modal-input:focus{border-color:#2DBF72}
+.modal-accion{width:100%;padding:12px;background:linear-gradient(135deg,#1B6B3A,#2DBF72);color:#fff;border:none;border-radius:25px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:all .2s}
+.modal-accion:hover{transform:translateY(-1px)}
+.modal-cancelar{width:100%;padding:10px;background:transparent;color:#557799;border:none;font-size:13px;cursor:pointer}
+.modal-cancelar:hover{color:#7BBFDC}
+.modal-sep{text-align:center;font-size:12px;color:#2a4a6a;margin:4px 0 14px}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B6B3A;color:#fff;padding:11px 22px;border-radius:25px;font-size:13px;font-weight:700;opacity:0;transition:opacity .3s;z-index:200;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+footer{text-align:center;padding:18px;font-size:11px;color:#2a4a6a;border-top:1px solid #1a2a3a;margin-top:40px}
+
+@media(max-width:500px){
+  .pregunta-card{padding:18px 16px}
+  .nav-btns{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back-btn" href="index.html">← Todos los capítulos</a>
+  <span class="topbar-titulo">LiderazGO — Milton Valle</span>
+</div>
+
+<div class="hero">
+  <div class="cap-eyebrow">Capítulo 8</div>
+  <h1 class="cap-h1">VISIÓN</h1>
+  <p class="cap-intro">Responde cada pregunta con honestidad. Este cuestionario está diseñado para que la verdad de este capítulo descienda del intelecto al corazón.</p>
+</div>
+
+<div class="main">
+
+  <div class="contador">
+    <span class="contador-texto" id="contadorTexto">Pregunta 1 de 12</span>
+    <span class="contador-correctas" id="contadorCorrectas">0 correctas</span>
+  </div>
+
+  <!-- PREGUNTAS -->
+  <div class="pregunta-wrap" id="p0">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 01</div>
+      <div class="pregunta-texto">¿Qué le ocurrió a Saulo en el camino a Damasco? (Hechos 9:3-5)</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(0,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">Tuvo un sueño profético mientras dormía</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(0,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">Un resplandor de luz del cielo lo rodeó y una voz le habló</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(0,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">Encontró una carta con un llamado de Dios</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(0,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">Un profeta lo detuvo y le dio una palabra</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb0">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        Saulo iba con dirección, pero sin revelación. Tenía pasión, pero no tenía visión. Y fue en un solo momento, en un encuentro real, donde Dios detuvo su camino y le mostró una realidad completamente diferente. La visión del Reino comienza cuando Dios cambia tu manera de ver.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.1 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(0)" disabled>← Anterior</button>
+      <button class="btn btn-next" id="btnNext0" onclick="siguiente(0)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p1">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 02</div>
+      <div class="pregunta-texto">¿Qué tenía Saulo antes de su encuentro pero le faltaba?</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(1,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">Tenía conocimiento pero le faltaba humildad</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(1,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">Tenía pasión pero le faltaba visión</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(1,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">Tenía fe pero le faltaba obediencia</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(1,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">Tenía talento pero le faltaba disciplina</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb1">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        Saulo tenía ojos pero no veía. Tenía conocimiento pero no tenía visión. Las escamas en sus ojos no solo representaban ceguera física, representaban una manera equivocada de ver.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.2 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(1)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext1" onclick="siguiente(1)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p2">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 03</div>
+      <div class="pregunta-texto">¿Cuáles son las cuatro cualidades de la visión?</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(2,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">Sueño, confirmación, proceso, cumplimiento</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(2,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">Encuentro, Obediencia, Consistencia, Reproducción</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(2,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">Llamado, formación, envío, multiplicación</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(2,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">Fe, esperanza, oración, acción</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb2">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        Las cuatro son: Encuentro (déjate capturar por Dios, no solo inspirar por ideas), Obediencia (no seas rebelde a la visión celestial), Consistencia (el visionario permanece firme hasta ver la promesa cumplida) y Reproducción (el visionario multiplica la visión en otros, no la retiene).
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.3 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(2)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext2" onclick="siguiente(2)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p3">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 04</div>
+      <div class="pregunta-texto">¿Qué declaró Pablo ante el rey Agripa? (Hechos 26:19)</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(3,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">'He dedicado mi vida a servir a los pobres'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(3,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">'No fui rebelde a la visión celestial'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(3,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">'Estoy dispuesto a morir por el evangelio'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(3,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">'El Señor me llamó desde mi nacimiento'</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb3">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        Esta declaración revela una verdad profunda: la visión puede ser resistida. Puede ser ignorada, diluida o abandonada. Pero Pablo decidió obedecerla, aunque eso implicara persecución, rechazo, cárceles y sacrificio.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.4 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(3)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext3" onclick="siguiente(3)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p4">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 05</div>
+      <div class="pregunta-texto">¿Qué dice Hechos 13:47 sobre la asignación de Pablo?</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(4,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">'Serás apóstol solo a Israel'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(4,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">'Predicarás solamente en Roma'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(4,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">'Te he puesto para luz de los gentiles, a fin de que seas salvación hasta lo último de la tierra'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(4,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">'Fundarás iglesias en toda Asia Menor'</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb4">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        Dios no le dio a Pablo una visión pequeña, le dio una asignación global. Y Pablo entendió que una visión grande requiere una obediencia mayor. La obediencia es lo que convierte la visión en impacto.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.5 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(4)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext4" onclick="siguiente(4)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p5">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 06</div>
+      <div class="pregunta-texto">¿Qué enfrentó Pablo por sostener su visión? (2 Corintios 11:24-26)</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(5,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">Solo rechazo social y críticas verbales</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(5,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">Azotes, naufragios, peligros y persecuciones</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(5,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">Solo prisión por pocos días</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(5,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">Expulsión de las sinagogas únicamente</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb5">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        Pablo no caminaba por resultados, caminaba por convicción. No se detenía por el dolor, avanzaba por la visión. Cada dificultad no lo alejaba del propósito, lo afirmaba más en él. La consistencia es lo que convierte una visión en legado.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.6 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(5)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext5" onclick="siguiente(5)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p6">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 07</div>
+      <div class="pregunta-texto">¿Qué dice Filipenses 3:14 sobre la consistencia de Pablo?</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(6,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">'Todo lo puedo en Cristo que me fortalece'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(6,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">'Prosigo a la meta, al premio del supremo llamamiento de Dios'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(6,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">'Para mí el vivir es Cristo y el morir es ganancia'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(6,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">'He aprendido a contentarme en cualquier estado'</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb6">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        Muchos comienzan con pasión, pero pocos permanecen con determinación. La visión para tocar multitudes no se cumple en un día, se construye en procesos, en pruebas, en momentos donde no hay aplausos, pero sí decisiones.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.7 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(6)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext6" onclick="siguiente(6)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p7">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 08</div>
+      <div class="pregunta-texto">¿Qué dice 2 Timoteo 2:2 sobre reproducción de la visión?</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(7,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">'Proclama la Palabra a tiempo y fuera de tiempo'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(7,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">'Lo que has oído de mí... encarga a hombres fieles que sean idóneos para enseñar también a otros'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(7,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">'Guarda el buen depósito que te fue encomendado'</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(7,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">'Cumple tu ministerio en toda circunstancia'</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb7">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        Pablo no caminó solo. Invirtió su vida en formar hombres y mujeres que llevarían la misma visión más lejos de lo que él mismo podía llegar. No creó seguidores dependientes, levantó discípulos capaces. La visión que no se transfiere, se extingue.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.8 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(7)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext7" onclick="siguiente(7)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p8">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 09</div>
+      <div class="pregunta-texto">¿Qué convierte la visión en impacto?</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(8,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">La creatividad y el talento del líder</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(8,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">La obediencia sin reservas</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(8,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">El tamaño de la congregación</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(8,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">El apoyo financiero recibido</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb8">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        La obediencia es lo que convierte la visión en impacto. Sin obediencia, la visión se queda en inspiración. Pero con obediencia, se convierte en transformación.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.9 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(8)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext8" onclick="siguiente(8)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p9">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 10</div>
+      <div class="pregunta-texto">¿Qué hace la rebelión con la visión?</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(9,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">La fortalece para el futuro</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(9,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">La retrasa pero no la detiene</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(9,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">La puede ignorar, diluir o abandonar</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(9,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">La convierte en algo mejor con el tiempo</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb9">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        La rebelión no siempre es desobediencia abierta; muchas veces es demora, excusa o distracción. La visión puede ser resistida, ignorada, diluida o abandonada. Pablo eligió no ser rebelde a la visión celestial.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.10 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(9)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext9" onclick="siguiente(9)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p10">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 11</div>
+      <div class="pregunta-texto">¿Qué es la 'evidencia de una visión madura'?</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(10,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">Tener muchos seguidores en redes sociales</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(10,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">La reproducción: multiplicar la visión en otros</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(10,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">Alcanzar a miles de personas en eventos</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(10,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">Construir un gran ministerio visible</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb10">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        La reproducción es la evidencia de una visión madura. Una persona puede alcanzar a pocos, pero muchos discípulos pueden transformar generaciones. La visión que se comparte se multiplica; la que se retiene, se limita.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.11 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(10)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext10" onclick="siguiente(10)" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <div class="pregunta-wrap" id="p11">
+    <div class="pregunta-card">
+      <div class="pregunta-num">PREGUNTA 12</div>
+      <div class="pregunta-texto">¿De qué se trata la verdadera visión según la conclusión?</div>
+      <div class="opciones">
+        <div class="opcion" onclick="seleccionar(11,0)">
+          <div class="opcion-letra">A</div>
+          <div class="opcion-texto">De lo que ves y cómo lo compartes</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(11,1)">
+          <div class="opcion-letra">B</div>
+          <div class="opcion-texto">De cómo caminas en ella y cómo impactas generaciones</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(11,2)">
+          <div class="opcion-letra">C</div>
+          <div class="opcion-texto">De tener sueños espirituales frecuentes</div>
+        </div>
+        <div class="opcion" onclick="seleccionar(11,3)">
+          <div class="opcion-letra">D</div>
+          <div class="opcion-texto">De recibir una profecía confirmada</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-wrap" id="fb11">
+      <div class="feedback">
+        <div class="fb-encabezado c"></div>
+        La visión verdadera nace de un encuentro con Dios, se sostiene con obediencia y consistencia, y se multiplica al formar a otros. No se trata solo de lo que ves, sino de cómo caminas en ella y cómo impactas generaciones.
+        <div class="fb-reflexion">Reflexión · LiderazGO Cap.12 — Milton Valle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-prev" onclick="anterior(11)" >← Anterior</button>
+      <button class="btn btn-next" id="btnNext11" onclick="siguiente(11)" disabled>Ver resultados →</button>
+    </div>
+  </div>
+
+
+
+  <!-- RESULTADO -->
+  <div class="resultado" id="resultado">
+    <div class="res-eyebrow">Resultado Final — Capítulo 8</div>
+    <div class="res-score" id="resScore"></div>
+    <div class="res-versiculo">"No fui rebelde a la visión celestial." — Hechos 26:19</div>
+    <div class="res-detalle">
+      <div class="res-item"><div class="res-num v" id="resCorrectas">0</div><div class="res-label">Correctas</div></div>
+      <div class="res-item"><div class="res-num r" id="resIncorrectas">0</div><div class="res-label">Incorrectas</div></div>
+      <div class="res-item"><div class="res-num" style="color:#7BBFDC">12</div><div class="res-label">Total</div></div>
+    </div>
+    <div class="res-msg" id="resMsg"></div>
+    <div class="res-btns">
+      <button class="btn-reiniciar" onclick="reiniciar()">Intentar de nuevo</button>
+      <a class="btn-siguiente" href="capitulo9.html">Capítulo 9 →</a>
+      <a class="btn-ver-todos" href="index.html">Ver todos</a>
+    </div>
+    <div class="compartir-sep"></div>
+    <div class="compartir-titulo">✉ Compartir resultados</div>
+    <div class="compartir-btns">
+      <button class="c-btn c-email" onclick="abrirModal('email')">✉ Enviar por correo</button>
+      <button class="c-btn c-sms" onclick="abrirModal('sms')">💬 Enviar por mensaje</button>
+      <button class="c-btn c-copy" onclick="copiar()">⎘ Copiar resultados</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-titulo">Compartir resultados</div>
+    <div class="modal-sub">Envía tu nota y reflexiones</div>
+    <label class="modal-label" id="modalLabel">Correo electrónico</label>
+    <input class="modal-input" id="modalInput" type="text" placeholder="">
+    <button class="modal-accion" id="modalAccion" onclick="enviarModal()">Enviar</button>
+    <div class="modal-sep">o simplemente</div>
+    <button class="modal-accion" style="background:#2a2a4a" onclick="copiar()">⎘ Copiar resultados al portapapeles</button>
+    <button class="modal-cancelar" onclick="cerrarModal()">✕ Cancelar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<footer>LiderazGO &nbsp;·&nbsp; Milton Valle</footer>
+
+<script>
+const DATOS = [{"correcta":1,"respondida":false},{"correcta":1,"respondida":false},{"correcta":1,"respondida":false},{"correcta":1,"respondida":false},{"correcta":2,"respondida":false},{"correcta":1,"respondida":false},{"correcta":1,"respondida":false},{"correcta":1,"respondida":false},{"correcta":1,"respondida":false},{"correcta":2,"respondida":false},{"correcta":1,"respondida":false},{"correcta":1,"respondida":false}];
+let actual = 0;
+let correctas = 0;
+let modoModal = 'email';
+
+function mostrarPregunta(idx) {
+  document.querySelectorAll('.pregunta-wrap').forEach((w,i) => w.classList.toggle('activa', i === idx));
+  document.getElementById('contadorTexto').textContent = `Pregunta ${idx+1} de 12`;
+}
+
+function seleccionar(pi, oi) {
+  const d = DATOS[pi];
+  if (d.respondida) return;
+  d.respondida = true;
+  const esOk = oi === d.correcta;
+  if (esOk) { correctas++; document.getElementById('contadorCorrectas').textContent = correctas + ' correctas'; }
+
+  const opciones = document.querySelectorAll(`#p${pi} .opcion`);
+  opciones.forEach((el, i) => {
+    el.classList.add('bloqueada');
+    if (i === d.correcta) el.classList.add('correcta');
+    if (i === oi && !esOk) el.classList.add('incorrecta-sel');
+  });
+
+  const fbWrap = document.getElementById(`fb${pi}`);
+  const fbEl = fbWrap.querySelector('.feedback');
+  const fbEnc = fbWrap.querySelector('.fb-encabezado');
+  fbEnc.textContent = esOk ? '✓ ¡Correcto!' : '✗ Respuesta incorrecta';
+  fbEnc.className = `fb-encabezado ${esOk ? 'c' : 'i'}`;
+  fbEl.className = `feedback ${esOk ? 'correcto' : 'incorrecto'}`;
+  fbWrap.classList.add('visible');
+
+  const btnNext = document.getElementById(`btnNext${pi}`);
+  if (btnNext) btnNext.disabled = false;
+}
+
+function siguiente(pi) {
+  if (pi < 11) {
+    actual = pi + 1;
+    mostrarPregunta(actual);
+    window.scrollTo({top:0,behavior:'smooth'});
+  } else {
+    mostrarResultado();
+  }
+}
+
+function anterior(pi) {
+  if (pi > 0) {
+    actual = pi - 1;
+    mostrarPregunta(actual);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+}
+
+function mostrarResultado() {
+  document.querySelectorAll('.pregunta-wrap').forEach(w => w.classList.remove('activa'));
+  const pct = Math.round(correctas / 12 * 100);
+  const nivel = pct >= 85 ? 'excelente' : pct >= 60 ? 'bien' : 'mejorar';
+  const msgs = {
+    excelente: '¡Excelente trabajo! Demostraste que leíste y comprendiste bien este capítulo. ¡Sigue adelante!',
+    bien: 'Buen esfuerzo. Comprendiste la mayor parte del capítulo. Te recomendamos releer las secciones donde tuviste dificultad.',
+    mejorar: 'Te invitamos a releer este capítulo antes de continuar. Cada principio es importante para tu formación.'
+  };
+  document.getElementById('resScore').textContent = pct + '/12';
+  document.getElementById('resScore').className = 'res-score ' + nivel;
+  document.getElementById('resCorrectas').textContent = correctas;
+  document.getElementById('resIncorrectas').textContent = 12 - correctas;
+  document.getElementById('resMsg').textContent = msgs[nivel];
+  document.getElementById('resultado').classList.add('visible');
+  document.getElementById('resultado').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function reiniciar() {
+  DATOS.forEach(d => d.respondida = false);
+  correctas = 0;
+  actual = 0;
+  document.getElementById('contadorCorrectas').textContent = '0 correctas';
+  document.getElementById('resultado').classList.remove('visible');
+  document.querySelectorAll('.opcion').forEach(el => el.className = 'opcion');
+  document.querySelectorAll('.feedback-wrap').forEach(el => el.classList.remove('visible'));
+  document.querySelectorAll('[id^="btnNext"]').forEach(el => el.disabled = true);
+  mostrarPregunta(0);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function buildResumen() {
+  const pct = Math.round(correctas / 12 * 100);
+  return `📖 LiderazGO — Milton Valle\nCapítulo 8: VISIÓN\n✅ Resultado: ${correctas}/12 (${pct}%)\n📅 ${new Date().toLocaleDateString('es-ES')}`;
+}
+
+function abrirModal(modo) {
+  modoModal = modo;
+  document.getElementById('modalBg').classList.add('open');
+  if (modo === 'email') {
+    document.getElementById('modalLabel').textContent = 'Correo electrónico';
+    document.getElementById('modalInput').type = 'email';
+    document.getElementById('modalInput').placeholder = 'ejemplo@correo.com';
+    document.getElementById('modalAccion').textContent = '✉ Enviar por correo';
+  } else {
+    document.getElementById('modalLabel').textContent = 'Número de teléfono';
+    document.getElementById('modalInput').type = 'tel';
+    document.getElementById('modalInput').placeholder = '+1 (555) 000-0000';
+    document.getElementById('modalAccion').textContent = '💬 Enviar por mensaje de texto';
+  }
+}
+
+function cerrarModal() {
+  document.getElementById('modalBg').classList.remove('open');
+  document.getElementById('modalInput').value = '';
+}
+
+function enviarModal() {
+  const val = document.getElementById('modalInput').value.trim();
+  const msg = buildResumen();
+  if (modoModal === 'email') {
+    const s = encodeURIComponent('Mi resultado — LiderazGO Cap.8: VISIÓN');
+    const b = encodeURIComponent(msg);
+    window.open(`mailto:${val}?subject=${s}&body=${b}`, '_blank');
+  } else {
+    const b = encodeURIComponent(msg);
+    const url = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? `sms:${val}&body=${b}` : `sms:${val}?body=${b}`;
+    window.open(url, '_blank');
+  }
+  cerrarModal();
+}
+
+function copiar() {
+  const msg = buildResumen();
+  navigator.clipboard.writeText(msg).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  });
+  toast('¡Copiado al portapapeles!');
+  cerrarModal();
+}
+
+function toast(txt) {
+  const t = document.getElementById('toast');
+  t.textContent = txt; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+mostrarPregunta(0);
+</script>
+</body>
+</html>

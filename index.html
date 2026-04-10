@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LiderazGO — Cuestionarios</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0D1B2A;color:#eee;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+.hero{background:linear-gradient(135deg,#0A1628 0%,#0D2240 60%,#071018 100%);padding:52px 24px 44px;text-align:center;border-bottom:4px solid #1B6B3A;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 60% 40%,rgba(45,191,114,.08) 0%,transparent 70%);pointer-events:none}
+.hero-eyebrow{font-size:11px;letter-spacing:5px;color:#2DBF72;text-transform:uppercase;margin-bottom:12px}
+.hero h1{font-size:clamp(2.2rem,6vw,3.6rem);font-weight:900;color:#fff;letter-spacing:-2px;line-height:1.05;margin-bottom:8px}
+.hero h1 span{color:#2DBF72}
+.hero-autor{font-size:14px;color:#7BBFDC;letter-spacing:3px;margin-bottom:28px}
+.hero-desc{font-size:15px;color:#8899aa;max-width:560px;margin:0 auto 36px;line-height:1.7}
+
+.stats{display:flex;justify-content:center;gap:32px;flex-wrap:wrap}
+.stat{text-align:center}
+.stat-num{font-size:2rem;font-weight:900;color:#2DBF72}
+.stat-label{font-size:11px;color:#557799;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+
+.main{max-width:900px;margin:0 auto;padding:40px 20px 80px}
+
+.section-label{font-size:11px;letter-spacing:4px;color:#2DBF72;text-transform:uppercase;margin-bottom:20px}
+
+.caps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px;margin-bottom:56px}
+
+.cap-card{display:block;background:#0E1E30;border:1.5px solid #1a3a5a;border-radius:14px;padding:24px 26px;transition:all .22s;position:relative;overflow:hidden}
+.cap-card::before{content:'';position:absolute;left:0;top:0;width:4px;height:100%;background:#1a3a5a;transition:background .22s}
+.cap-card:hover{border-color:#2DBF72;transform:translateY(-3px);box-shadow:0 8px 28px rgba(45,191,114,.12)}
+.cap-card:hover::before{background:#2DBF72}
+
+.cap-eyebrow{font-size:10px;letter-spacing:3px;color:#2DBF72;text-transform:uppercase;margin-bottom:5px}
+.cap-titulo{font-size:1.1rem;font-weight:800;color:#fff;margin-bottom:10px;line-height:1.3}
+.cap-titulo em{color:#2DBF72;font-style:normal}
+.cap-desc{font-size:13px;color:#557799;line-height:1.6;margin-bottom:16px}
+.cap-footer{display:flex;align-items:center;justify-content:space-between}
+.cap-preguntas{font-size:11px;color:#2a4a6a;letter-spacing:1px}
+.cap-arrow{font-size:13px;color:#2DBF72;font-weight:700;transition:transform .2s}
+.cap-card:hover .cap-arrow{transform:translateX(4px)}
+
+.instrucciones{background:#0E1E30;border:1px solid #1a3a5a;border-radius:14px;padding:32px 36px}
+.instrucciones h3{font-size:13px;letter-spacing:3px;color:#2DBF72;text-transform:uppercase;margin-bottom:24px}
+.pasos{display:flex;flex-direction:column;gap:16px}
+.paso{display:flex;gap:16px;align-items:flex-start}
+.paso-num{min-width:32px;height:32px;background:#1B6B3A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0}
+.paso-texto{font-size:14px;color:#8899aa;line-height:1.6;padding-top:5px}
+
+footer{text-align:center;padding:20px;font-size:11px;color:#2a4a6a;border-top:1px solid #1a2a3a}
+
+@media(max-width:600px){
+  .caps-grid{grid-template-columns:1fr}
+  .stats{gap:20px}
+  .instrucciones{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-eyebrow">Cuestionarios de Estudio</div>
+  <h1>Lideraz<span>GO</span></h1>
+  <div class="hero-autor">Milton Valle</div>
+  <p class="hero-desc">Herramientas de reflexión para que los principios de este libro desciendan del intelecto al corazón y se conviertan en decisiones concretas de liderazgo.</p>
+  <div class="stats">
+    <div class="stat"><div class="stat-num">12</div><div class="stat-label">Capítulos</div></div>
+    <div class="stat"><div class="stat-num">144</div><div class="stat-label">Preguntas</div></div>
+    <div class="stat"><div class="stat-num">144</div><div class="stat-label">Reflexiones</div></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="section-label">Selecciona un capítulo</div>
+  <div class="caps-grid">
+
+    <a class="cap-card" href="capitulo1.html">
+      <div class="cap-eyebrow">Capítulo 01</div>
+      <div class="cap-titulo">DISCIPULADO</div>
+      <div class="cap-desc">El proceso de formación de Jesús con sus discípulos: Formación, Relación, Transferencia y Delegación como modelo eterno.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo2.html">
+      <div class="cap-eyebrow">Capítulo 02</div>
+      <div class="cap-titulo">IDENTIDAD</div>
+      <div class="cap-desc">La identidad de David: ungido en lo oculto, probado en el campo y firme ante la intimidación de Goliat.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo3.html">
+      <div class="cap-eyebrow">Capítulo 03</div>
+      <div class="cap-titulo">CARÁCTER</div>
+      <div class="cap-desc">Job como modelo de equilibrio, perseverancia, dominio propio e integridad en medio del sufrimiento.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo4.html">
+      <div class="cap-eyebrow">Capítulo 04</div>
+      <div class="cap-titulo">RESTAURACIÓN</div>
+      <div class="cap-desc">José: traicionado, difamado y olvidado, pero con un corazón que eligió soltar, gobernar, esperar y reconciliar.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo5.html">
+      <div class="cap-eyebrow">Capítulo 05</div>
+      <div class="cap-titulo">RESISTENCIA</div>
+      <div class="cap-desc">Daniel en Babilonia: convicción establecida antes de la presión, conexiones correctas e identidad que ningún sistema pudo borrar.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo6.html">
+      <div class="cap-eyebrow">Capítulo 06</div>
+      <div class="cap-titulo">SERVICIO</div>
+      <div class="cap-desc">Cristo como modelo de servicio: disposición, enfoque, pasión y voluntariedad que nacen del amor y no de la obligación.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo7.html">
+      <div class="cap-eyebrow">Capítulo 07</div>
+      <div class="cap-titulo">FIDELIDAD</div>
+      <div class="cap-desc">Rut: decisiones firmes, diligencia en lo oculto, honra recibida sin ser buscada y un legado que impactó generaciones.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo8.html">
+      <div class="cap-eyebrow">Capítulo 08</div>
+      <div class="cap-titulo">VISIÓN</div>
+      <div class="cap-desc">Pablo: de Saulo ciego a visionario imparable. Encuentro, obediencia, consistencia y reproducción como etapas de la visión real.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo9.html">
+      <div class="cap-eyebrow">Capítulo 09</div>
+      <div class="cap-titulo">UNIDAD</div>
+      <div class="cap-desc">Gedeón y los 300: convicción sobre cantidad, sincronización, quebrantamiento personal y perseverancia hasta el final.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo10.html">
+      <div class="cap-eyebrow">Capítulo 10</div>
+      <div class="cap-titulo">PASIÓN</div>
+      <div class="cap-desc">Apolos: poderoso en las Escrituras, hirviendo en espíritu, enseñable ante la corrección y generador de un movimiento.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo11.html">
+      <div class="cap-eyebrow">Capítulo 11</div>
+      <div class="cap-titulo">INFLUENCIA</div>
+      <div class="cap-desc">Elías: fuego de Dios, transformación de sistemas, multiplicación en Eliseo e intimidad que trasciende la muerte.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+    <a class="cap-card" href="capitulo12.html">
+      <div class="cap-eyebrow">Capítulo 12</div>
+      <div class="cap-titulo">MULTIPLICACIÓN</div>
+      <div class="cap-desc">David y la cueva de Adulam: academia de valientes, transferencia de identidad, relación que produce lealtad y rompimiento de límites.</div>
+      <div class="cap-footer"><span class="cap-preguntas">12 preguntas →</span><span class="cap-arrow">→</span></div>
+    </a>
+
+  </div>
+
+  <div class="instrucciones">
+    <h3>Cómo usar estos cuestionarios</h3>
+    <div class="pasos">
+      <div class="paso"><div class="paso-num">01</div><div class="paso-texto">Lee el capítulo correspondiente del libro antes de responder el cuestionario.</div></div>
+      <div class="paso"><div class="paso-num">02</div><div class="paso-texto">Responde con honestidad. Las preguntas de aplicación no tienen respuesta incorrecta.</div></div>
+      <div class="paso"><div class="paso-num">03</div><div class="paso-texto">Al terminar, comparte tu nota por correo o mensaje de texto con tu líder o compañero de discipulado.</div></div>
+    </div>
+  </div>
+</div>
+
+<footer>LiderazGO &nbsp;·&nbsp; Milton Valle</footer>
+</body>
+</html>
