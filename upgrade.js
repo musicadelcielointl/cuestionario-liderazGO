@@ -1,47 +1,94 @@
 /* ============================================================
-   UPGRADE.JS v2 — Reflexión Personal + Guardado de Progreso
+   UPGRADE.JS v5 — Reflexión Personal + Guardado + Amazon
    Para los cuestionarios de los libros del Pastor Milton Valle:
    • En Autoridad y Bajo Autoridad
    • LiderazGO
    • Restaurando Matrimonios
    • Visión 20/20
 
-   v2: Soporte para formato de pregunta-única (LiderazGO)
+   v5: Tarjetas de Amazon
+   - En el índice: sección "Recursos del libro" con tarjetas grandes
+   - En cuestionarios individuales: tarjeta compacta al final
+   - Solo muestra los libros disponibles en Amazon
+
+   v4: Oculta recomendaciones automáticas en Matrimonios
+   v3: Botón "Volver al índice" + reflexión final
    ============================================================ */
 
 (function () {
   'use strict';
 
   // ────────────────────────────────────────────────────
-  // 1. DETECCIÓN AUTOMÁTICA DEL CONTEXTO
+  // 0. CATÁLOGO DE LIBROS EN AMAZON
+  // ────────────────────────────────────────────────────
+  const AMAZON_BOOKS = {
+    autoridad: [
+      {
+        title: 'En Autoridad y Bajo Autoridad',
+        subtitle: 'Principios de liderazgo espiritual',
+        author: 'Pastor Milton Valle',
+        url: 'https://www.amazon.com/dp/B0GXVRV12G',
+        emoji: '📕',
+        description: 'Profundiza en los principios bíblicos sobre la autoridad espiritual y cómo caminar correctamente bajo cobertura.'
+      }
+    ],
+    matrimonios: [
+      {
+        title: 'Restaurando Matrimonios',
+        subtitle: 'Edificando parejas con el diseño original de Dios',
+        author: 'Pastor Milton Valle',
+        url: 'https://www.amazon.com/dp/B0GVN675JW',
+        emoji: '📗',
+        description: 'El libro completo con la enseñanza pastoral sobre cómo edificar matrimonios sólidos según el diseño de Dios.'
+      },
+      {
+        title: 'Guía de Reflexión y Crecimiento',
+        subtitle: 'Un espacio personal para aplicar, reflexionar y crecer capítulo a capítulo',
+        author: 'Pastor Milton Valle',
+        url: 'https://www.amazon.com/dp/B0GVNJLH5X',
+        emoji: '📓',
+        description: 'Acompaña al libro principal con dinámicas, preguntas y un diario personal para cada cónyuge.'
+      }
+    ],
+    liderazgo: [],   // Aún no disponible en Amazon
+    vision: [],      // Aún no disponible en Amazon
+    general: []
+  };
+
+  // ────────────────────────────────────────────────────
+  // 1. DETECCIÓN AUTOMÁTICA
   // ────────────────────────────────────────────────────
   const PATH = window.location.pathname;
-  const HOST = window.location.hostname;
   const FILENAME = (PATH.split('/').pop() || 'index.html').toLowerCase();
 
   let BOOK_ID = 'general';
   let BOOK_NAME = 'Cuestionarios';
+  let INDEX_FILE = 'index.html';
+
   if (PATH.includes('/autoridad') || document.title.toLowerCase().includes('autoridad')) {
     BOOK_ID = 'autoridad';
     BOOK_NAME = 'En Autoridad y Bajo Autoridad';
+    INDEX_FILE = 'index.html';
   } else if (PATH.toLowerCase().includes('liderazgo') || document.title.toLowerCase().includes('liderazgo')) {
     BOOK_ID = 'liderazgo';
     BOOK_NAME = 'LiderazGO';
+    INDEX_FILE = 'index.html';
   } else if (PATH.includes('matrimonios') || document.title.toLowerCase().includes('matrimonios') || document.title.toLowerCase().includes('matrimonio')) {
     BOOK_ID = 'matrimonios';
     BOOK_NAME = 'Restaurando Matrimonios';
+    INDEX_FILE = 'index_matrimonios.html';
   } else if (PATH.includes('vision') || document.title.toLowerCase().includes('visión 20')) {
     BOOK_ID = 'vision';
     BOOK_NAME = 'Visión 20/20';
+    INDEX_FILE = 'index.html';
   }
 
   const SECTION_ID = FILENAME.replace('.html', '').replace(/[^a-z0-9_-]/g, '');
 
-  // Detectar formato del cuestionario
-  // Formato A (Autoridad/Visión): .question-card (todas visibles)
-  // Formato B (LiderazGO): .pregunta-wrap (una a la vez)
   const formatAcards = document.querySelectorAll('.question-card');
   const formatBcards = document.querySelectorAll('.pregunta-wrap');
+  const formatCcards = document.querySelectorAll('.q-card');
+  const matrimoniosSection = document.getElementById('results-section');
 
   let QUIZ_FORMAT = 'none';
   let QUESTION_CARDS = [];
@@ -52,10 +99,14 @@
   } else if (formatBcards.length > 0) {
     QUIZ_FORMAT = 'B';
     QUESTION_CARDS = formatBcards;
+  } else if (formatCcards.length > 0 && matrimoniosSection) {
+    QUIZ_FORMAT = 'C';
+    QUESTION_CARDS = formatCcards;
   }
 
   const IS_INDEX = (
     SECTION_ID === 'index' ||
+    SECTION_ID === 'index_matrimonios' ||
     SECTION_ID === '' ||
     SECTION_ID.includes('index') ||
     QUIZ_FORMAT === 'none'
@@ -63,8 +114,11 @@
 
   const IS_DIAGNOSTIC = (BOOK_ID === 'matrimonios' && !IS_INDEX);
 
+  const BOOKS_FOR_THIS_SITE = AMAZON_BOOKS[BOOK_ID] || [];
+  const HAS_AMAZON_BOOKS = BOOKS_FOR_THIS_SITE.length > 0;
+
   // ────────────────────────────────────────────────────
-  // 2. ALMACENAMIENTO LOCAL
+  // 2. STORAGE
   // ────────────────────────────────────────────────────
   const STORAGE_PREFIX = 'milton_valle_v1_';
   const STORAGE_KEY = STORAGE_PREFIX + BOOK_ID;
@@ -73,17 +127,14 @@
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
     catch (e) { return {}; }
   }
-
   function saveProgress(data) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-    catch (e) { console.warn('No se pudo guardar el progreso', e); }
+    catch (e) {}
   }
-
   function getSection(sectionId) {
     const all = loadProgress();
     return all[sectionId] || { reflections: {}, completed: false, finalReflection: {}, updatedAt: null };
   }
-
   function setSection(sectionId, data) {
     const all = loadProgress();
     all[sectionId] = Object.assign({}, all[sectionId] || {}, data, { updatedAt: new Date().toISOString() });
@@ -98,6 +149,7 @@
     const style = document.createElement('style');
     style.id = 'mv-upgrade-styles';
     style.textContent = `
+      /* ──── REFLEXIÓN POR PREGUNTA (Autoridad, LiderazGO) ──── */
       .mv-reflection-area {
         margin-top: 22px;
         padding-top: 20px;
@@ -122,9 +174,7 @@
         font-family: 'Cormorant Garamond', 'Lora', Georgia, serif;
         line-height: 1.5;
       }
-      .mv-dark-theme .mv-reflection-area {
-        border-top-color: rgba(45,191,114,0.25);
-      }
+      .mv-dark-theme .mv-reflection-area { border-top-color: rgba(45,191,114,0.25); }
       .mv-dark-theme .mv-reflection-label { color: #2DBF72; }
       .mv-dark-theme .mv-reflection-hint { color: #7BBFDC; }
       .mv-reflection-textarea {
@@ -180,59 +230,106 @@
       .mv-dark-theme .mv-reflection-saved { color: #2DBF72; }
       .mv-reflection-saved.show { opacity: 0.9; }
 
+      /* ──── REFLEXIÓN FINAL (Matrimonios) ──── */
       .mv-final-reflection {
-        max-width: 720px;
-        margin: 28px auto 32px;
-        padding: 28px 32px;
-        background: rgba(255,253,248,0.92);
-        border: 1px solid rgba(184,150,90,0.3);
-        border-left: 4px solid #B8965A;
-        border-radius: 6px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        background: #fff;
+        border: 1px solid #e5dfd4;
+        border-left: 4px solid #c9a22e;
+        border-radius: 14px;
+        padding: 1.5rem 1.75rem;
+        margin: 1.5rem 0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
       }
       .mv-final-reflection h3 {
         font-family: 'Cormorant Garamond', 'Lora', Georgia, serif;
-        font-size: 24px;
+        font-size: 1.35rem;
         color: #6B0D0D;
-        margin: 0 0 8px;
+        margin: 0 0 0.5rem;
         font-weight: 600;
         line-height: 1.2;
       }
       .mv-final-reflection .mv-fr-subtitle {
         font-size: 13px;
         color: #666;
-        margin-bottom: 18px;
-        line-height: 1.5;
+        margin-bottom: 1rem;
+        line-height: 1.6;
       }
       .mv-final-reflection .mv-fr-question {
         font-family: 'Cormorant Garamond', 'Lora', Georgia, serif;
-        font-size: 16px;
+        font-size: 1.05rem;
         color: #1a1a2e;
-        margin: 16px 0 6px;
+        margin: 1rem 0 0.4rem;
         font-weight: 600;
+        line-height: 1.4;
       }
       .mv-final-reflection textarea {
         width: 100%;
         min-height: 70px;
-        padding: 12px 14px;
-        border: 1px solid rgba(150,120,80,0.3);
-        background: #fff;
+        padding: 11px 14px;
+        border: 1.5px solid #e5dfd4;
+        background: #fdfcfa;
         font-family: 'Cormorant Garamond', 'Lora', Georgia, serif;
-        font-size: 16px;
+        font-size: 15px;
         color: #2C2416;
         resize: vertical;
         font-style: italic;
-        border-radius: 4px;
-        line-height: 1.5;
+        border-radius: 9px;
+        line-height: 1.55;
         box-sizing: border-box;
-        margin-bottom: 4px;
+        transition: border-color 0.15s, background 0.15s;
       }
       .mv-final-reflection textarea:focus {
         outline: none;
-        border-color: #B8965A;
-        background: #FFFDF8;
+        border-color: #c9a22e;
+        background: #fff;
+      }
+      .mv-final-reflection textarea::placeholder {
+        color: #c9a22e;
+        opacity: 0.4;
       }
 
+      /* ──── BOTÓN "VOLVER AL ÍNDICE" ──── */
+      .mv-back-button-wrap {
+        text-align: center;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+      }
+      .mv-back-button {
+        display: inline-block;
+        font-family: 'DM Sans', 'Lato', sans-serif;
+        font-size: 13.5px;
+        font-weight: 500;
+        padding: 10px 26px;
+        border-radius: 9px;
+        border: 1.5px solid #6B0D0D;
+        background: #6B0D0D;
+        color: #fff;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.15s;
+        margin: 0 6px;
+      }
+      .mv-back-button:hover {
+        background: #4a0808;
+        border-color: #4a0808;
+        text-decoration: none;
+        color: #fff;
+      }
+      .mv-dark-theme .mv-back-button {
+        background: #B8965A;
+        border-color: #B8965A;
+        color: #1A1510;
+      }
+      .mv-dark-theme .mv-back-button:hover {
+        background: #D4B483;
+        border-color: #D4B483;
+        color: #1A1510;
+      }
+
+      /* ──── OCULTAR RECOMENDACIONES ──── */
+      .mv-hide-reco { display: none !important; }
+
+      /* ──── BADGES DE PROGRESO ──── */
       .mv-status-badge {
         display: inline-block;
         font-family: 'Cinzel', 'Montserrat', 'DM Sans', sans-serif;
@@ -255,6 +352,7 @@
         z-index: 5;
       }
 
+      /* ──── PILL FLOTANTE ──── */
       .mv-progress-pill {
         position: fixed;
         bottom: 16px;
@@ -270,12 +368,10 @@
         z-index: 9999;
         cursor: pointer;
         font-weight: 600;
-        transition: transform 0.2s;
         opacity: 0.95;
-        pointer-events: auto;
       }
-      .mv-progress-pill:hover { transform: translateY(-2px); }
 
+      /* ──── BANNER DEL ÍNDICE ──── */
       .mv-index-banner {
         max-width: 820px;
         margin: 16px auto 24px;
@@ -308,26 +404,208 @@
         cursor: pointer;
         border-radius: 4px;
         font-weight: 600;
-        transition: background 0.2s, color 0.2s;
       }
       .mv-index-banner button:hover { background: #B8965A; color: #fff; }
-
       .mv-dark-banner {
         background: linear-gradient(135deg, rgba(45,191,114,0.15), rgba(184,150,90,0.05));
         border-color: rgba(45,191,114,0.4);
       }
       .mv-dark-banner .mv-index-banner-text { color: #d4d4d4; }
       .mv-dark-banner .mv-index-banner-text strong { color: #2DBF72; }
-      .mv-dark-banner button {
-        border-color: #2DBF72;
-        color: #2DBF72;
-      }
+      .mv-dark-banner button { border-color: #2DBF72; color: #2DBF72; }
       .mv-dark-banner button:hover { background: #2DBF72; color: #fff; }
+
+      /* ──── SECCIÓN AMAZON EN ÍNDICE ──── */
+      .mv-amazon-section {
+        max-width: 820px;
+        margin: 32px auto;
+        padding: 0 16px;
+        font-family: 'Lato', 'DM Sans', 'Segoe UI', sans-serif;
+      }
+      .mv-amazon-header {
+        text-align: center;
+        margin-bottom: 1.25rem;
+      }
+      .mv-amazon-eyebrow {
+        font-family: 'Cinzel', 'Montserrat', sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #B8965A;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .mv-amazon-title {
+        font-family: 'Cormorant Garamond', 'Lora', Georgia, serif;
+        font-size: 1.6rem;
+        color: #6B0D0D;
+        font-weight: 600;
+        line-height: 1.2;
+        margin-bottom: 4px;
+      }
+      .mv-amazon-subtitle {
+        font-size: 13px;
+        color: #666;
+        font-style: italic;
+      }
+      .mv-amazon-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+      }
+      .mv-amazon-card {
+        background: #fff;
+        border: 1px solid #e5dfd4;
+        border-left: 4px solid #c9a22e;
+        border-radius: 12px;
+        padding: 1.25rem 1.4rem;
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        transition: transform 0.15s, box-shadow 0.15s;
+        text-decoration: none;
+        color: inherit;
+      }
+      .mv-amazon-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(107,13,13,0.08);
+        text-decoration: none;
+      }
+      .mv-amazon-card-emoji {
+        font-size: 2.2rem;
+        flex-shrink: 0;
+        line-height: 1;
+        margin-top: 2px;
+      }
+      .mv-amazon-card-content {
+        flex: 1;
+        min-width: 0;
+      }
+      .mv-amazon-card-title {
+        font-family: 'Cormorant Garamond', 'Lora', Georgia, serif;
+        font-size: 1.15rem;
+        color: #6B0D0D;
+        font-weight: 600;
+        line-height: 1.25;
+        margin-bottom: 3px;
+      }
+      .mv-amazon-card-subtitle {
+        font-size: 12px;
+        color: #777;
+        line-height: 1.45;
+        margin-bottom: 6px;
+        font-style: italic;
+      }
+      .mv-amazon-card-author {
+        font-size: 11px;
+        color: #B8965A;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+      .mv-amazon-card-cta {
+        display: inline-block;
+        font-family: 'DM Sans', 'Lato', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 7px 16px;
+        background: #6B0D0D;
+        color: #fff;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background 0.15s;
+      }
+      .mv-amazon-card:hover .mv-amazon-card-cta {
+        background: #4a0808;
+      }
+
+      /* Versión oscura para LiderazGO si llega a tener libros */
+      .mv-dark-theme .mv-amazon-eyebrow { color: #2DBF72; }
+      .mv-dark-theme .mv-amazon-title { color: #fff; }
+      .mv-dark-theme .mv-amazon-subtitle { color: #aaa; }
+      .mv-dark-theme .mv-amazon-card {
+        background: #0E1E30;
+        border-color: #1a3a5a;
+        border-left-color: #2DBF72;
+      }
+      .mv-dark-theme .mv-amazon-card-title { color: #fff; }
+      .mv-dark-theme .mv-amazon-card-subtitle { color: #aaa; }
+      .mv-dark-theme .mv-amazon-card-author { color: #2DBF72; }
+      .mv-dark-theme .mv-amazon-card-cta {
+        background: #2DBF72;
+        color: #0A1628;
+      }
+      .mv-dark-theme .mv-amazon-card:hover .mv-amazon-card-cta {
+        background: #4DD494;
+      }
+
+      /* ──── TARJETA AMAZON EN CUESTIONARIOS (compacta) ──── */
+      .mv-amazon-mini {
+        background: #fdfcfa;
+        border: 1px solid #e5dfd4;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin: 1.25rem 0;
+        text-align: center;
+        font-family: 'Lato', 'DM Sans', 'Segoe UI', sans-serif;
+      }
+      .mv-amazon-mini-eyebrow {
+        font-family: 'Cinzel', 'Montserrat', sans-serif;
+        font-size: 9px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #B8965A;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .mv-amazon-mini-title {
+        font-family: 'Cormorant Garamond', 'Lora', Georgia, serif;
+        font-size: 1.05rem;
+        color: #6B0D0D;
+        font-weight: 600;
+        margin-bottom: 8px;
+        line-height: 1.3;
+      }
+      .mv-amazon-mini-cta {
+        display: inline-block;
+        font-family: 'DM Sans', 'Lato', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 7px 18px;
+        background: #6B0D0D;
+        color: #fff;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background 0.15s;
+      }
+      .mv-amazon-mini-cta:hover {
+        background: #4a0808;
+        text-decoration: none;
+        color: #fff;
+      }
+      .mv-dark-theme .mv-amazon-mini {
+        background: #0E1E30;
+        border-color: #1a3a5a;
+      }
+      .mv-dark-theme .mv-amazon-mini-eyebrow { color: #2DBF72; }
+      .mv-dark-theme .mv-amazon-mini-title { color: #fff; }
+      .mv-dark-theme .mv-amazon-mini-cta {
+        background: #2DBF72;
+        color: #0A1628;
+      }
+      .mv-dark-theme .mv-amazon-mini-cta:hover {
+        background: #4DD494;
+        color: #0A1628;
+      }
 
       @media (max-width: 600px) {
         .mv-index-banner { padding: 12px 16px; margin: 12px; }
         .mv-progress-pill { font-size: 9px; padding: 8px 14px; }
-        .mv-final-reflection { padding: 22px 20px; margin: 20px 14px; }
+        .mv-final-reflection { padding: 1.25rem 1.5rem; }
+        .mv-amazon-card { padding: 1rem 1.15rem; }
+        .mv-amazon-card-emoji { font-size: 1.8rem; }
+        .mv-amazon-title { font-size: 1.4rem; }
       }
     `;
     document.head.appendChild(style);
@@ -351,18 +629,16 @@
       const r = parseInt(match[1]);
       const g = parseInt(match[2]);
       const b = parseInt(match[3]);
-      const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-      return luminance < 100;
+      return (0.299 * r + 0.587 * g + 0.114 * b) < 100;
     }
     return BOOK_ID === 'liderazgo';
   }
 
   // ────────────────────────────────────────────────────
-  // 5. UPGRADE PARA CUESTIONARIOS REFLEXIVOS
+  // 5. UPGRADE REFLEXIVO
   // ────────────────────────────────────────────────────
   function upgradeReflectiveQuiz() {
     if (QUESTION_CARDS.length === 0) return;
-
     const isDark = isDarkBackground();
     if (isDark) document.body.classList.add('mv-dark-theme');
 
@@ -388,9 +664,8 @@
         else card.appendChild(area);
       } else if (QUIZ_FORMAT === 'B') {
         const preguntaCard = card.querySelector('.pregunta-card');
-        if (preguntaCard) {
-          preguntaCard.appendChild(area);
-        } else {
+        if (preguntaCard) preguntaCard.appendChild(area);
+        else {
           const fb = card.querySelector('.feedback-wrap');
           if (fb) card.insertBefore(area, fb);
           else card.appendChild(area);
@@ -415,25 +690,52 @@
     addProgressPill();
     hookShareFunction();
     hookResultsDisplay();
+    injectAmazonMini();
   }
 
   // ────────────────────────────────────────────────────
-  // 6. UPGRADE DIAGNÓSTICOS (Matrimonios)
+  // 6. UPGRADE DIAGNÓSTICO (Matrimonios)
   // ────────────────────────────────────────────────────
   function upgradeDiagnosticQuiz() {
-    let targetParent = null;
-    let insertBefore = null;
+    if (!matrimoniosSection) return;
 
-    const resultsCard = document.querySelector('.results-card, #results, .resultados, .results-screen, .final-results, [id*="result"], [id*="Result"]');
-    if (resultsCard) {
-      targetParent = resultsCard.parentElement;
-      insertBefore = resultsCard;
-    } else {
-      const quizContainer = document.querySelector('.quiz-container, .container, main, body');
-      if (quizContainer) targetParent = quizContainer;
+    const observer = new MutationObserver(() => {
+      const isVisible = matrimoniosSection.style.display === 'block' ||
+                       window.getComputedStyle(matrimoniosSection).display === 'block';
+      if (isVisible && !document.querySelector('.mv-final-reflection')) {
+        hideRecommendations();
+        injectFinalReflection();
+        injectBackButton();
+        injectAmazonMini();
+        const data = getSection(SECTION_ID);
+        if (!data.completed) {
+          data.completed = true;
+          setSection(SECTION_ID, data);
+        }
+      }
+    });
+    observer.observe(matrimoniosSection, { attributes: true, attributeFilter: ['style', 'class'] });
+
+    const isVisibleNow = window.getComputedStyle(matrimoniosSection).display === 'block';
+    if (isVisibleNow) {
+      hideRecommendations();
+      injectFinalReflection();
+      injectBackButton();
+      injectAmazonMini();
     }
-    if (!targetParent) return;
+
+    addProgressPill();
+    hookShareFunction();
+  }
+
+  function hideRecommendations() {
+    const recoCards = document.querySelectorAll('.reco-card');
+    recoCards.forEach(card => card.classList.add('mv-hide-reco'));
+  }
+
+  function injectFinalReflection() {
     if (document.querySelector('.mv-final-reflection')) return;
+    if (!matrimoniosSection) return;
 
     const sectionData = getSection(SECTION_ID);
     const finalRef = sectionData.finalReflection || {};
@@ -441,26 +743,36 @@
     const ref = document.createElement('div');
     ref.className = 'mv-final-reflection';
     ref.innerHTML = `
-      <h3>✦ Reflexión Final</h3>
+      <h3>✦ Reflexión Personal Final</h3>
       <p class="mv-fr-subtitle">Después de evaluar esta área de tu matrimonio, toma un momento para responder con honestidad. Tus respuestas se guardan en este dispositivo.</p>
 
       <div class="mv-fr-question">¿Qué área específica salió más fuerte de lo que esperabas?</div>
-      <textarea data-key="strength" placeholder="Escribe aquí..."></textarea>
+      <textarea data-key="strength" placeholder="Escribe aquí lo que te llamó la atención..."></textarea>
 
       <div class="mv-fr-question">¿Qué área necesita más atención y cuidado en las próximas semanas?</div>
       <textarea data-key="weakness" placeholder="Escribe aquí..."></textarea>
 
       <div class="mv-fr-question">¿Qué compromiso concreto asumes con tu cónyuge a partir de este resultado?</div>
-      <textarea data-key="commitment" placeholder="Escribe aquí..."></textarea>
+      <textarea data-key="commitment" placeholder="Sé específico/a — un compromiso concreto..."></textarea>
 
       <div class="mv-fr-question">¿Qué conversación pendiente necesitas tener con tu pareja esta semana?</div>
       <textarea data-key="conversation" placeholder="Escribe aquí..."></textarea>
 
-      <div class="mv-reflection-saved" style="margin-top:14px;">✓ Guardado</div>
+      <div class="mv-reflection-saved" style="margin-top:12px;">✓ Guardado</div>
     `;
 
-    if (insertBefore) targetParent.insertBefore(ref, insertBefore);
-    else targetParent.appendChild(ref);
+    const profileCard = matrimoniosSection.querySelector('.profile-card');
+    const actionCard = matrimoniosSection.querySelector('.action-card');
+
+    if (profileCard && profileCard.parentNode) {
+      profileCard.parentNode.insertBefore(ref, profileCard.nextSibling);
+    } else if (actionCard && actionCard.parentNode) {
+      actionCard.parentNode.insertBefore(ref, actionCard);
+    } else {
+      const restartRow = matrimoniosSection.querySelector('.restart-row');
+      if (restartRow) matrimoniosSection.insertBefore(ref, restartRow);
+      else matrimoniosSection.appendChild(ref);
+    }
 
     const textareas = ref.querySelectorAll('textarea');
     textareas.forEach(ta => {
@@ -477,14 +789,106 @@
         notifyProgress();
       }, 500));
     });
+  }
 
-    addProgressPill();
-    hookShareFunction();
-    hookResultsDisplay();
+  function injectBackButton() {
+    if (document.querySelector('.mv-back-button')) return;
+    if (!matrimoniosSection) return;
+
+    const restartRow = matrimoniosSection.querySelector('.restart-row');
+    if (restartRow) {
+      const backBtn = document.createElement('a');
+      backBtn.href = INDEX_FILE;
+      backBtn.className = 'mv-back-button';
+      backBtn.innerHTML = '← Volver al índice';
+      restartRow.insertBefore(backBtn, restartRow.firstChild);
+    } else {
+      const wrap = document.createElement('div');
+      wrap.className = 'mv-back-button-wrap';
+      wrap.innerHTML = `<a href="${INDEX_FILE}" class="mv-back-button">← Volver al índice</a>`;
+      matrimoniosSection.appendChild(wrap);
+    }
   }
 
   // ────────────────────────────────────────────────────
-  // 7. PILL FLOTANTE
+  // 7. TARJETAS AMAZON
+  // ────────────────────────────────────────────────────
+  function injectAmazonSection() {
+    if (!HAS_AMAZON_BOOKS) return;
+    if (document.querySelector('.mv-amazon-section')) return;
+
+    const section = document.createElement('div');
+    section.className = 'mv-amazon-section';
+
+    const cardsHtml = BOOKS_FOR_THIS_SITE.map(book => `
+      <a class="mv-amazon-card" href="${book.url}" target="_blank" rel="noopener noreferrer">
+        <div class="mv-amazon-card-emoji">${book.emoji}</div>
+        <div class="mv-amazon-card-content">
+          <div class="mv-amazon-card-title">${book.title}</div>
+          <div class="mv-amazon-card-subtitle">${book.subtitle}</div>
+          <div class="mv-amazon-card-author">${book.author}</div>
+          <span class="mv-amazon-card-cta">🛒 Ver en Amazon →</span>
+        </div>
+      </a>
+    `).join('');
+
+    section.innerHTML = `
+      <div class="mv-amazon-header">
+        <div class="mv-amazon-eyebrow">✦ Recursos del libro</div>
+        <div class="mv-amazon-title">Profundiza en el contenido completo</div>
+        <div class="mv-amazon-subtitle">Adquiere el${BOOKS_FOR_THIS_SITE.length > 1 ? 'os libros' : ' libro'} ${BOOKS_FOR_THIS_SITE.length > 1 ? 'directamente' : 'directamente'} en Amazon</div>
+      </div>
+      <div class="mv-amazon-grid">
+        ${cardsHtml}
+      </div>
+    `;
+
+    // Insertar antes del footer o al final del body
+    const footer = document.querySelector('footer, .footer');
+    if (footer) {
+      footer.parentNode.insertBefore(section, footer);
+    } else {
+      document.body.appendChild(section);
+    }
+  }
+
+  function injectAmazonMini() {
+    if (!HAS_AMAZON_BOOKS) return;
+    if (document.querySelector('.mv-amazon-mini')) return;
+
+    // En cuestionarios individuales, mostrar solo el libro principal (el primero)
+    const mainBook = BOOKS_FOR_THIS_SITE[0];
+
+    const mini = document.createElement('div');
+    mini.className = 'mv-amazon-mini';
+    mini.innerHTML = `
+      <div class="mv-amazon-mini-eyebrow">✦ ¿Quieres profundizar más?</div>
+      <div class="mv-amazon-mini-title">${mainBook.emoji} ${mainBook.title}</div>
+      <a class="mv-amazon-mini-cta" href="${mainBook.url}" target="_blank" rel="noopener noreferrer">🛒 Ver en Amazon →</a>
+    `;
+
+    // Para Matrimonios: insertar dentro de results-section, antes de .restart-row
+    if (IS_DIAGNOSTIC && matrimoniosSection) {
+      const restartRow = matrimoniosSection.querySelector('.restart-row');
+      if (restartRow) {
+        matrimoniosSection.insertBefore(mini, restartRow);
+      } else {
+        matrimoniosSection.appendChild(mini);
+      }
+      return;
+    }
+
+    // Para Autoridad/LiderazGO/Visión: insertar al final de la página
+    const footer = document.querySelector('footer, .footer');
+    if (footer) {
+      footer.parentNode.insertBefore(mini, footer);
+    } else {
+      document.body.appendChild(mini);
+    }
+  }
+
+  // ────────────────────────────────────────────────────
+  // 8. PILL FLOTANTE
   // ────────────────────────────────────────────────────
   let progressPill = null;
   function addProgressPill() {
@@ -495,7 +899,6 @@
     document.body.appendChild(progressPill);
     updateProgressPill();
   }
-
   function updateProgressPill() {
     if (!progressPill) return;
     const data = getSection(SECTION_ID);
@@ -509,15 +912,14 @@
       progressPill.innerHTML = '✏️ ' + count + ' / ' + total + ' reflexiones';
     }
   }
-
   function notifyProgress() { updateProgressPill(); }
 
   // ────────────────────────────────────────────────────
-  // 8. MARCAR COMPLETADO
+  // 9. MARCAR COMPLETADO
   // ────────────────────────────────────────────────────
   function hookResultsDisplay() {
     const observer = new MutationObserver(() => {
-      const candidates = document.querySelectorAll('.results-card, #results, #resultado, .resultado, .resultados, .results-screen, .final-results');
+      const candidates = document.querySelectorAll('.results-card, #results, #resultado, .resultado, .resultados');
       candidates.forEach(el => {
         const isVisible = el.classList.contains('show') || el.classList.contains('active') ||
                          el.classList.contains('visible') ||
@@ -535,22 +937,16 @@
   }
 
   // ────────────────────────────────────────────────────
-  // 9. HOOK A FUNCIÓN DE COMPARTIR
+  // 10. HOOK COMPARTIR
   // ────────────────────────────────────────────────────
   function hookShareFunction() {
     if (typeof window.buildSummary === 'function') {
-      const originalBuild = window.buildSummary;
-      window.buildSummary = function (...args) {
-        let summary = originalBuild.apply(this, args);
-        return appendReflections(summary);
-      };
+      const original = window.buildSummary;
+      window.buildSummary = function (...args) { return appendReflections(original.apply(this, args)); };
     }
     if (typeof window.buildResumen === 'function') {
-      const originalBuild = window.buildResumen;
-      window.buildResumen = function (...args) {
-        let summary = originalBuild.apply(this, args);
-        return appendReflections(summary);
-      };
+      const original = window.buildResumen;
+      window.buildResumen = function (...args) { return appendReflections(original.apply(this, args)); };
     }
   }
 
@@ -575,8 +971,7 @@
       };
       ['strength','weakness','commitment','conversation'].forEach(key => {
         if (finalRef[key] && finalRef[key].trim()) {
-          summary += labels[key] + ':\n';
-          summary += finalRef[key].trim() + '\n\n';
+          summary += labels[key] + ':\n' + finalRef[key].trim() + '\n\n';
         }
       });
     } else if (Object.keys(refs).length > 0) {
@@ -588,8 +983,7 @@
       sortedKeys.forEach(qId => {
         if (refs[qId] && refs[qId].trim()) {
           const num = (qId.match(/\d+/) || [''])[0];
-          summary += '➤ Pregunta ' + num + ':\n';
-          summary += refs[qId].trim() + '\n\n';
+          summary += '➤ Pregunta ' + num + ':\n' + refs[qId].trim() + '\n\n';
         }
       });
     }
@@ -597,7 +991,7 @@
   }
 
   // ────────────────────────────────────────────────────
-  // 10. UPGRADE PARA EL ÍNDICE
+  // 11. UPGRADE PARA ÍNDICES
   // ────────────────────────────────────────────────────
   function upgradeIndex() {
     const isDark = isDarkBackground();
@@ -670,14 +1064,17 @@
         link.appendChild(badge);
       }
     });
+
+    // Inyectar sección de Amazon si hay libros disponibles
+    injectAmazonSection();
   }
 
   // ────────────────────────────────────────────────────
-  // 11. API PÚBLICA
+  // 12. API PÚBLICA
   // ────────────────────────────────────────────────────
   window.MVUpgrade = {
     resetAll: function () {
-      if (!confirm('¿Estás seguro de reiniciar TODO tu progreso de "' + BOOK_NAME + '"? Esta acción no se puede deshacer y borrará todas tus reflexiones guardadas.')) return;
+      if (!confirm('¿Estás seguro de reiniciar TODO tu progreso de "' + BOOK_NAME + '"? Esta acción no se puede deshacer.')) return;
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
       location.reload();
     },
@@ -691,11 +1088,13 @@
     getProgress: function () { return loadProgress(); },
     BOOK_ID: BOOK_ID,
     SECTION_ID: SECTION_ID,
-    QUIZ_FORMAT: QUIZ_FORMAT
+    QUIZ_FORMAT: QUIZ_FORMAT,
+    VERSION: 'v5',
+    BOOKS: BOOKS_FOR_THIS_SITE
   };
 
   // ────────────────────────────────────────────────────
-  // 12. INICIALIZACIÓN
+  // 13. INIT
   // ────────────────────────────────────────────────────
   function init() {
     injectStyles();
