@@ -1,17 +1,12 @@
 /* ============================================================
-   UPGRADE.JS — Reflexión Personal + Guardado de Progreso
+   UPGRADE.JS v2 — Reflexión Personal + Guardado de Progreso
    Para los cuestionarios de los libros del Pastor Milton Valle:
    • En Autoridad y Bajo Autoridad
    • LiderazGO
    • Restaurando Matrimonios
    • Visión 20/20
 
-   Este archivo se incluye con UNA SOLA línea al final del HTML
-   y agrega automáticamente:
-   1. Sección de reflexión personal (textarea opcional)
-   2. Guardado automático del progreso en el navegador
-   3. Indicadores de "completado / en progreso" en los índices
-   4. Las reflexiones se incluyen en el correo/mensaje al compartir
+   v2: Soporte para formato de pregunta-única (LiderazGO)
    ============================================================ */
 
 (function () {
@@ -24,13 +19,12 @@
   const HOST = window.location.hostname;
   const FILENAME = (PATH.split('/').pop() || 'index.html').toLowerCase();
 
-  // Detectar el libro por la URL
   let BOOK_ID = 'general';
   let BOOK_NAME = 'Cuestionarios';
   if (PATH.includes('/autoridad') || document.title.toLowerCase().includes('autoridad')) {
     BOOK_ID = 'autoridad';
     BOOK_NAME = 'En Autoridad y Bajo Autoridad';
-  } else if (PATH.includes('liderazgo') || document.title.toLowerCase().includes('liderazgo')) {
+  } else if (PATH.toLowerCase().includes('liderazgo') || document.title.toLowerCase().includes('liderazgo')) {
     BOOK_ID = 'liderazgo';
     BOOK_NAME = 'LiderazGO';
   } else if (PATH.includes('matrimonios') || document.title.toLowerCase().includes('matrimonios') || document.title.toLowerCase().includes('matrimonio')) {
@@ -41,19 +35,33 @@
     BOOK_NAME = 'Visión 20/20';
   }
 
-  // ID único de esta sección/capítulo (basado en el filename)
   const SECTION_ID = FILENAME.replace('.html', '').replace(/[^a-z0-9_-]/g, '');
 
-  // Detectar si esta página es un índice o un cuestionario
+  // Detectar formato del cuestionario
+  // Formato A (Autoridad/Visión): .question-card (todas visibles)
+  // Formato B (LiderazGO): .pregunta-wrap (una a la vez)
+  const formatAcards = document.querySelectorAll('.question-card');
+  const formatBcards = document.querySelectorAll('.pregunta-wrap');
+
+  let QUIZ_FORMAT = 'none';
+  let QUESTION_CARDS = [];
+
+  if (formatAcards.length > 0) {
+    QUIZ_FORMAT = 'A';
+    QUESTION_CARDS = formatAcards;
+  } else if (formatBcards.length > 0) {
+    QUIZ_FORMAT = 'B';
+    QUESTION_CARDS = formatBcards;
+  }
+
   const IS_INDEX = (
     SECTION_ID === 'index' ||
     SECTION_ID === '' ||
     SECTION_ID.includes('index') ||
-    document.querySelectorAll('.question-card, .question').length === 0
+    QUIZ_FORMAT === 'none'
   );
 
-  // Detectar si el cuestionario es diagnóstico (Matrimonios) o reflexivo (los demás)
-  const IS_DIAGNOSTIC = (BOOK_ID === 'matrimonios');
+  const IS_DIAGNOSTIC = (BOOK_ID === 'matrimonios' && !IS_INDEX);
 
   // ────────────────────────────────────────────────────
   // 2. ALMACENAMIENTO LOCAL
@@ -62,9 +70,8 @@
   const STORAGE_KEY = STORAGE_PREFIX + BOOK_ID;
 
   function loadProgress() {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    } catch (e) { return {}; }
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch (e) { return {}; }
   }
 
   function saveProgress(data) {
@@ -74,7 +81,7 @@
 
   function getSection(sectionId) {
     const all = loadProgress();
-    return all[sectionId] || { reflections: {}, completed: false, finalReflection: '', updatedAt: null };
+    return all[sectionId] || { reflections: {}, completed: false, finalReflection: {}, updatedAt: null };
   }
 
   function setSection(sectionId, data) {
@@ -84,29 +91,28 @@
   }
 
   // ────────────────────────────────────────────────────
-  // 3. ESTILOS CSS (se inyectan automáticamente)
+  // 3. ESTILOS CSS
   // ────────────────────────────────────────────────────
   function injectStyles() {
     if (document.getElementById('mv-upgrade-styles')) return;
     const style = document.createElement('style');
     style.id = 'mv-upgrade-styles';
     style.textContent = `
-      /* === MV UPGRADE STYLES === */
       .mv-reflection-area {
         margin-top: 22px;
         padding-top: 20px;
         border-top: 1px dashed rgba(150,120,80,0.35);
       }
       .mv-reflection-label {
-        font-family: 'Cinzel', 'Montserrat', 'DM Sans', sans-serif;
+        font-family: 'Cinzel', 'Montserrat', 'DM Sans', 'Segoe UI', sans-serif;
         font-size: 10px;
         letter-spacing: 0.22em;
         text-transform: uppercase;
         font-weight: 600;
         margin-bottom: 8px;
         display: block;
-        color: #8A6D3B;
-        opacity: 0.85;
+        color: #B8965A;
+        opacity: 0.95;
       }
       .mv-reflection-hint {
         font-size: 12px;
@@ -114,7 +120,13 @@
         font-style: italic;
         margin-bottom: 10px;
         font-family: 'Cormorant Garamond', 'Lora', Georgia, serif;
+        line-height: 1.5;
       }
+      .mv-dark-theme .mv-reflection-area {
+        border-top-color: rgba(45,191,114,0.25);
+      }
+      .mv-dark-theme .mv-reflection-label { color: #2DBF72; }
+      .mv-dark-theme .mv-reflection-hint { color: #7BBFDC; }
       .mv-reflection-textarea {
         width: 100%;
         min-height: 80px;
@@ -127,7 +139,7 @@
         resize: vertical;
         font-style: italic;
         transition: border-color 0.25s, background 0.25s;
-        border-radius: 2px;
+        border-radius: 4px;
         line-height: 1.55;
         box-sizing: border-box;
       }
@@ -141,8 +153,21 @@
         opacity: 0.5;
         font-style: italic;
       }
+      .mv-dark-theme .mv-reflection-textarea {
+        background: rgba(13,34,64,0.5);
+        border-color: rgba(45,191,114,0.3);
+        color: #e8e8e8;
+      }
+      .mv-dark-theme .mv-reflection-textarea:focus {
+        border-color: #2DBF72;
+        background: #0E1E30;
+      }
+      .mv-dark-theme .mv-reflection-textarea::placeholder {
+        color: #7BBFDC;
+        opacity: 0.5;
+      }
       .mv-reflection-saved {
-        font-family: 'Cinzel', 'Montserrat', 'DM Sans', sans-serif;
+        font-family: 'Cinzel', 'Montserrat', sans-serif;
         font-size: 9px;
         letter-spacing: 0.15em;
         color: #2D5A27;
@@ -152,14 +177,14 @@
         font-weight: 600;
         text-transform: uppercase;
       }
+      .mv-dark-theme .mv-reflection-saved { color: #2DBF72; }
       .mv-reflection-saved.show { opacity: 0.9; }
 
-      /* Reflexión final para diagnósticos (Matrimonios) */
       .mv-final-reflection {
         max-width: 720px;
         margin: 28px auto 32px;
         padding: 28px 32px;
-        background: rgba(255,253,248,0.85);
+        background: rgba(255,253,248,0.92);
         border: 1px solid rgba(184,150,90,0.3);
         border-left: 4px solid #B8965A;
         border-radius: 6px;
@@ -178,7 +203,6 @@
         color: #666;
         margin-bottom: 18px;
         line-height: 1.5;
-        font-family: inherit;
       }
       .mv-final-reflection .mv-fr-question {
         font-family: 'Cormorant Garamond', 'Lora', Georgia, serif;
@@ -198,7 +222,7 @@
         color: #2C2416;
         resize: vertical;
         font-style: italic;
-        border-radius: 2px;
+        border-radius: 4px;
         line-height: 1.5;
         box-sizing: border-box;
         margin-bottom: 4px;
@@ -209,7 +233,6 @@
         background: #FFFDF8;
       }
 
-      /* === Index status badges === */
       .mv-status-badge {
         display: inline-block;
         font-family: 'Cinzel', 'Montserrat', 'DM Sans', sans-serif;
@@ -223,14 +246,8 @@
         vertical-align: middle;
         white-space: nowrap;
       }
-      .mv-status-badge.completed {
-        background: #2D5A27;
-        color: #fff;
-      }
-      .mv-status-badge.in-progress {
-        background: #B8965A;
-        color: #fff;
-      }
+      .mv-status-badge.completed { background: #2D5A27; color: #fff; }
+      .mv-status-badge.in-progress { background: #B8965A; color: #fff; }
       .mv-status-overlay {
         position: absolute;
         top: 8px;
@@ -238,41 +255,40 @@
         z-index: 5;
       }
 
-      /* Floating progress info on quiz pages */
       .mv-progress-pill {
         position: fixed;
         bottom: 16px;
         right: 16px;
-        background: rgba(26,21,16,0.92);
+        background: rgba(26,21,16,0.94);
         color: #D4B483;
         font-family: 'Cinzel', 'Montserrat', sans-serif;
         font-size: 10px;
         letter-spacing: 0.14em;
-        padding: 9px 16px;
+        padding: 10px 18px;
         border-radius: 99px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-        z-index: 50;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        z-index: 9999;
         cursor: pointer;
         font-weight: 600;
         transition: transform 0.2s;
         opacity: 0.95;
+        pointer-events: auto;
       }
       .mv-progress-pill:hover { transform: translateY(-2px); }
 
-      /* Index summary banner */
       .mv-index-banner {
-        max-width: 720px;
-        margin: 0 auto 24px;
+        max-width: 820px;
+        margin: 16px auto 24px;
         padding: 14px 22px;
-        background: linear-gradient(135deg, rgba(184,150,90,0.10), rgba(184,150,90,0.04));
-        border: 1px solid rgba(184,150,90,0.3);
+        background: linear-gradient(135deg, rgba(184,150,90,0.12), rgba(184,150,90,0.04));
+        border: 1px solid rgba(184,150,90,0.4);
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 16px;
         flex-wrap: wrap;
-        font-family: 'Lato', 'DM Sans', sans-serif;
+        font-family: 'Lato', 'DM Sans', 'Segoe UI', sans-serif;
       }
       .mv-index-banner-text {
         font-size: 13px;
@@ -294,13 +310,23 @@
         font-weight: 600;
         transition: background 0.2s, color 0.2s;
       }
-      .mv-index-banner button:hover {
-        background: #B8965A;
-        color: #fff;
+      .mv-index-banner button:hover { background: #B8965A; color: #fff; }
+
+      .mv-dark-banner {
+        background: linear-gradient(135deg, rgba(45,191,114,0.15), rgba(184,150,90,0.05));
+        border-color: rgba(45,191,114,0.4);
       }
+      .mv-dark-banner .mv-index-banner-text { color: #d4d4d4; }
+      .mv-dark-banner .mv-index-banner-text strong { color: #2DBF72; }
+      .mv-dark-banner button {
+        border-color: #2DBF72;
+        color: #2DBF72;
+      }
+      .mv-dark-banner button:hover { background: #2DBF72; color: #fff; }
+
       @media (max-width: 600px) {
-        .mv-index-banner { padding: 12px 16px; }
-        .mv-progress-pill { font-size: 9px; padding: 7px 12px; }
+        .mv-index-banner { padding: 12px 16px; margin: 12px; }
+        .mv-progress-pill { font-size: 9px; padding: 8px 14px; }
         .mv-final-reflection { padding: 22px 20px; margin: 20px 14px; }
       }
     `;
@@ -318,31 +344,35 @@
     };
   }
 
-  function getPrettyTitle() {
-    // Intentar obtener el título visible del cuestionario
-    const ch = document.querySelector('.chapter-title, .ch-title, h1, h2');
-    if (ch) return ch.textContent.replace(/\s+/g, ' ').trim();
-    return document.title.split('—')[0].trim();
+  function isDarkBackground() {
+    const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+    const match = bodyBg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (match) {
+      const r = parseInt(match[1]);
+      const g = parseInt(match[2]);
+      const b = parseInt(match[3]);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+      return luminance < 100;
+    }
+    return BOOK_ID === 'liderazgo';
   }
 
   // ────────────────────────────────────────────────────
   // 5. UPGRADE PARA CUESTIONARIOS REFLEXIVOS
-  //    (Autoridad, LiderazGO, Visión 20/20)
   // ────────────────────────────────────────────────────
   function upgradeReflectiveQuiz() {
-    const cards = document.querySelectorAll('.question-card');
-    if (cards.length === 0) return;
+    if (QUESTION_CARDS.length === 0) return;
+
+    const isDark = isDarkBackground();
+    if (isDark) document.body.classList.add('mv-dark-theme');
 
     const sectionData = getSection(SECTION_ID);
     const reflections = sectionData.reflections || {};
 
-    cards.forEach((card, idx) => {
+    QUESTION_CARDS.forEach((card, idx) => {
       const qId = card.id || ('q' + (idx + 1));
-
-      // Evitar duplicar
       if (card.querySelector('.mv-reflection-area')) return;
 
-      // Crear área de reflexión
       const area = document.createElement('div');
       area.className = 'mv-reflection-area';
       area.innerHTML = `
@@ -352,19 +382,24 @@
         <div class="mv-reflection-saved">✓ Guardado</div>
       `;
 
-      // Insertar antes de los botones de navegación si existen, si no, al final
-      const navButtons = card.querySelector('.nav-buttons');
-      if (navButtons) {
-        card.insertBefore(area, navButtons);
-      } else {
-        card.appendChild(area);
+      if (QUIZ_FORMAT === 'A') {
+        const navButtons = card.querySelector('.nav-buttons');
+        if (navButtons) card.insertBefore(area, navButtons);
+        else card.appendChild(area);
+      } else if (QUIZ_FORMAT === 'B') {
+        const preguntaCard = card.querySelector('.pregunta-card');
+        if (preguntaCard) {
+          preguntaCard.appendChild(area);
+        } else {
+          const fb = card.querySelector('.feedback-wrap');
+          if (fb) card.insertBefore(area, fb);
+          else card.appendChild(area);
+        }
       }
 
-      // Restaurar valor guardado
       const ta = area.querySelector('textarea');
       if (reflections[qId]) ta.value = reflections[qId];
 
-      // Auto-guardar
       const savedIndicator = area.querySelector('.mv-reflection-saved');
       ta.addEventListener('input', debounce(function () {
         const data = getSection(SECTION_ID);
@@ -377,42 +412,27 @@
       }, 500));
     });
 
-    // Pill flotante con progreso
     addProgressPill();
-
-    // Hook a la función de compartir si existe (para incluir reflexiones)
     hookShareFunction();
-
-    // Marcar como visitado/completado al ver resultados
     hookResultsDisplay();
   }
 
   // ────────────────────────────────────────────────────
-  // 6. UPGRADE PARA CUESTIONARIOS DIAGNÓSTICOS
-  //    (Restaurando Matrimonios)
+  // 6. UPGRADE DIAGNÓSTICOS (Matrimonios)
   // ────────────────────────────────────────────────────
   function upgradeDiagnosticQuiz() {
-    // Para Matrimonios: agregar UNA sección de reflexión AL FINAL del cuestionario
-    // (antes de los resultados o al final del flujo)
-
-    // Buscar el lugar correcto para insertar la reflexión final
-    // Generalmente está antes de un .results-card o al final del .quiz-container
     let targetParent = null;
     let insertBefore = null;
 
-    const resultsCard = document.querySelector('.results-card, #results, .resultados, .results-screen, .final-results, [id*="result"]');
+    const resultsCard = document.querySelector('.results-card, #results, .resultados, .results-screen, .final-results, [id*="result"], [id*="Result"]');
     if (resultsCard) {
       targetParent = resultsCard.parentElement;
       insertBefore = resultsCard;
     } else {
       const quizContainer = document.querySelector('.quiz-container, .container, main, body');
-      if (quizContainer) {
-        targetParent = quizContainer;
-      }
+      if (quizContainer) targetParent = quizContainer;
     }
     if (!targetParent) return;
-
-    // Si ya existe la reflexión final, no duplicar
     if (document.querySelector('.mv-final-reflection')) return;
 
     const sectionData = getSection(SECTION_ID);
@@ -439,13 +459,9 @@
       <div class="mv-reflection-saved" style="margin-top:14px;">✓ Guardado</div>
     `;
 
-    if (insertBefore) {
-      targetParent.insertBefore(ref, insertBefore);
-    } else {
-      targetParent.appendChild(ref);
-    }
+    if (insertBefore) targetParent.insertBefore(ref, insertBefore);
+    else targetParent.appendChild(ref);
 
-    // Restaurar y guardar
     const textareas = ref.querySelectorAll('textarea');
     textareas.forEach(ta => {
       const key = ta.getAttribute('data-key');
@@ -468,7 +484,7 @@
   }
 
   // ────────────────────────────────────────────────────
-  // 7. PILL FLOTANTE DE PROGRESO
+  // 7. PILL FLOTANTE
   // ────────────────────────────────────────────────────
   let progressPill = null;
   function addProgressPill() {
@@ -489,23 +505,22 @@
       progressPill.innerHTML = '✏️ ' + count + ' de 4 reflexiones';
     } else {
       count = Object.values(data.reflections || {}).filter(v => v && v.trim()).length;
-      const total = document.querySelectorAll('.question-card').length || 12;
+      const total = QUESTION_CARDS.length || 12;
       progressPill.innerHTML = '✏️ ' + count + ' / ' + total + ' reflexiones';
     }
   }
 
-  function notifyProgress() {
-    updateProgressPill();
-  }
+  function notifyProgress() { updateProgressPill(); }
 
   // ────────────────────────────────────────────────────
-  // 8. MARCAR COMPLETADO AL VER RESULTADOS
+  // 8. MARCAR COMPLETADO
   // ────────────────────────────────────────────────────
   function hookResultsDisplay() {
-    // Cuando se muestra el card de resultados, marcar como completado
     const observer = new MutationObserver(() => {
-      document.querySelectorAll('.results-card, #results, .resultados, .results-screen, .final-results').forEach(el => {
+      const candidates = document.querySelectorAll('.results-card, #results, #resultado, .resultado, .resultados, .results-screen, .final-results');
+      candidates.forEach(el => {
         const isVisible = el.classList.contains('show') || el.classList.contains('active') ||
+                         el.classList.contains('visible') ||
                          (el.style.display && el.style.display !== 'none' && getComputedStyle(el).display !== 'none');
         if (isVisible) {
           const data = getSection(SECTION_ID);
@@ -520,64 +535,74 @@
   }
 
   // ────────────────────────────────────────────────────
-  // 9. INTEGRACIÓN CON LA FUNCIÓN DE COMPARTIR EXISTENTE
+  // 9. HOOK A FUNCIÓN DE COMPARTIR
   // ────────────────────────────────────────────────────
   function hookShareFunction() {
-    // Si existe window.buildSummary, la envolvemos para incluir reflexiones
     if (typeof window.buildSummary === 'function') {
       const originalBuild = window.buildSummary;
       window.buildSummary = function (...args) {
         let summary = originalBuild.apply(this, args);
-        const data = getSection(SECTION_ID);
-        const refs = data.reflections || {};
-        const finalRef = data.finalReflection || {};
-
-        // Agregar reflexiones al final del summary
-        const hasReflections = Object.values(refs).some(v => v && v.trim()) ||
-                              Object.values(finalRef).some(v => v && v.trim());
-
-        if (hasReflections) {
-          summary += '\n\n═════════════════════════════\n';
-          summary += '✦ MIS REFLEXIONES PERSONALES\n';
-          summary += '═════════════════════════════\n\n';
-
-          if (IS_DIAGNOSTIC && Object.keys(finalRef).length > 0) {
-            const labels = {
-              strength: '➤ Lo que salió más fuerte de lo esperado',
-              weakness: '➤ Áreas que necesitan más atención',
-              commitment: '➤ Mi compromiso concreto',
-              conversation: '➤ Conversación pendiente con mi pareja'
-            };
-            ['strength','weakness','commitment','conversation'].forEach(key => {
-              if (finalRef[key] && finalRef[key].trim()) {
-                summary += labels[key] + ':\n';
-                summary += finalRef[key].trim() + '\n\n';
-              }
-            });
-          } else if (Object.keys(refs).length > 0) {
-            const sortedKeys = Object.keys(refs).sort((a, b) => {
-              const na = parseInt((a.match(/\d+/) || [0])[0]);
-              const nb = parseInt((b.match(/\d+/) || [0])[0]);
-              return na - nb;
-            });
-            sortedKeys.forEach(qId => {
-              if (refs[qId] && refs[qId].trim()) {
-                const num = (qId.match(/\d+/) || [''])[0];
-                summary += '➤ Pregunta ' + num + ':\n';
-                summary += refs[qId].trim() + '\n\n';
-              }
-            });
-          }
-        }
-        return summary;
+        return appendReflections(summary);
       };
     }
+    if (typeof window.buildResumen === 'function') {
+      const originalBuild = window.buildResumen;
+      window.buildResumen = function (...args) {
+        let summary = originalBuild.apply(this, args);
+        return appendReflections(summary);
+      };
+    }
+  }
+
+  function appendReflections(summary) {
+    const data = getSection(SECTION_ID);
+    const refs = data.reflections || {};
+    const finalRef = data.finalReflection || {};
+    const hasReflections = Object.values(refs).some(v => v && v.trim()) ||
+                          Object.values(finalRef).some(v => v && v.trim());
+    if (!hasReflections) return summary;
+
+    summary += '\n\n═════════════════════════════\n';
+    summary += '✦ MIS REFLEXIONES PERSONALES\n';
+    summary += '═════════════════════════════\n\n';
+
+    if (IS_DIAGNOSTIC && Object.keys(finalRef).length > 0) {
+      const labels = {
+        strength: '➤ Lo que salió más fuerte de lo esperado',
+        weakness: '➤ Áreas que necesitan más atención',
+        commitment: '➤ Mi compromiso concreto',
+        conversation: '➤ Conversación pendiente con mi pareja'
+      };
+      ['strength','weakness','commitment','conversation'].forEach(key => {
+        if (finalRef[key] && finalRef[key].trim()) {
+          summary += labels[key] + ':\n';
+          summary += finalRef[key].trim() + '\n\n';
+        }
+      });
+    } else if (Object.keys(refs).length > 0) {
+      const sortedKeys = Object.keys(refs).sort((a, b) => {
+        const na = parseInt((a.match(/\d+/) || [0])[0]);
+        const nb = parseInt((b.match(/\d+/) || [0])[0]);
+        return na - nb;
+      });
+      sortedKeys.forEach(qId => {
+        if (refs[qId] && refs[qId].trim()) {
+          const num = (qId.match(/\d+/) || [''])[0];
+          summary += '➤ Pregunta ' + num + ':\n';
+          summary += refs[qId].trim() + '\n\n';
+        }
+      });
+    }
+    return summary;
   }
 
   // ────────────────────────────────────────────────────
   // 10. UPGRADE PARA EL ÍNDICE
   // ────────────────────────────────────────────────────
   function upgradeIndex() {
+    const isDark = isDarkBackground();
+    if (isDark) document.body.classList.add('mv-dark-theme');
+
     const allProgress = loadProgress();
     const completedCount = Object.values(allProgress).filter(s => s.completed).length;
     const inProgressCount = Object.values(allProgress).filter(s => {
@@ -588,10 +613,9 @@
              Object.values(final).some(v => v && v.trim());
     }).length;
 
-    // Banner superior con progreso
     if (completedCount > 0 || inProgressCount > 0) {
       const banner = document.createElement('div');
-      banner.className = 'mv-index-banner';
+      banner.className = 'mv-index-banner' + (isDark ? ' mv-dark-banner' : '');
       banner.innerHTML = `
         <div class="mv-index-banner-text">
           ✦ Tu progreso: <strong>${completedCount}</strong> completado${completedCount !== 1 ? 's' : ''}
@@ -600,11 +624,10 @@
         <button onclick="window.MVUpgrade.resetAll()">Reiniciar todo</button>
       `;
 
-      // Insertar al inicio del main content
       const target = document.querySelector('.intro, .grid-section, main, .container, body');
       if (target) {
         const firstChild = target.firstElementChild;
-        if (firstChild && firstChild.classList && firstChild.classList.contains('hero')) {
+        if (firstChild && (firstChild.classList.contains('hero') || firstChild.classList.contains('header'))) {
           if (firstChild.nextSibling) target.insertBefore(banner, firstChild.nextSibling);
           else target.appendChild(banner);
         } else {
@@ -613,7 +636,6 @@
       }
     }
 
-    // Marcar cada link de capítulo con su estado
     const links = document.querySelectorAll('a[href*=".html"]');
     links.forEach(link => {
       const href = link.getAttribute('href');
@@ -624,11 +646,8 @@
       const linkData = allProgress[linkSectionId];
       if (!linkData) return;
 
-      // Hacer el link relativo posicional
       const computedPosition = getComputedStyle(link).position;
-      if (computedPosition === 'static') {
-        link.style.position = 'relative';
-      }
+      if (computedPosition === 'static') link.style.position = 'relative';
 
       let badge = null;
       if (linkData.completed) {
@@ -671,7 +690,8 @@
     },
     getProgress: function () { return loadProgress(); },
     BOOK_ID: BOOK_ID,
-    SECTION_ID: SECTION_ID
+    SECTION_ID: SECTION_ID,
+    QUIZ_FORMAT: QUIZ_FORMAT
   };
 
   // ────────────────────────────────────────────────────
@@ -685,7 +705,7 @@
     } else {
       if (IS_DIAGNOSTIC) {
         upgradeDiagnosticQuiz();
-      } else {
+      } else if (QUIZ_FORMAT !== 'none') {
         upgradeReflectiveQuiz();
       }
     }
@@ -694,7 +714,6 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
-    // Esperar un poco para que el HTML termine de inicializar
     setTimeout(init, 50);
   }
 
