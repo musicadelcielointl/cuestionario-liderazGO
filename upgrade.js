@@ -1,16 +1,17 @@
 /* ============================================================
-   UPGRADE.JS v5 — Reflexión Personal + Guardado + Amazon
+   UPGRADE.JS v6 — Reflexión Personal + Guardado + Amazon
    Para los cuestionarios de los libros del Pastor Milton Valle:
    • En Autoridad y Bajo Autoridad
    • LiderazGO
    • Restaurando Matrimonios
    • Visión 20/20
 
-   v5: Tarjetas de Amazon
-   - En el índice: sección "Recursos del libro" con tarjetas grandes
-   - En cuestionarios individuales: tarjeta compacta al final
-   - Solo muestra los libros disponibles en Amazon
+   v6: Paletas correctas por libro
+   - Autoridad: negro #0a0a0a + dorado #d4af37
+   - Matrimonios: rojo carmesí #6B0D0D + dorado #c9a22e
+   - LiderazGO: oscuro + verde
 
+   v5: Tarjetas de Amazon en índices y cuestionarios
    v4: Oculta recomendaciones automáticas en Matrimonios
    v3: Botón "Volver al índice" + reflexión final
    ============================================================ */
@@ -599,6 +600,56 @@
         color: #0A1628;
       }
 
+      /* ════════════════════════════════════════════
+         TEMAS POR LIBRO — paletas correctas
+         ════════════════════════════════════════════ */
+
+      /* ──── AUTORIDAD: negro + dorado ──── */
+      body.mv-theme-autoridad .mv-amazon-card {
+        background: #0a0a0a;
+        border: 1px solid rgba(212, 175, 55, 0.35);
+        border-left: 4px solid #d4af37;
+      }
+      body.mv-theme-autoridad .mv-amazon-card:hover {
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.15);
+        border-color: rgba(212, 175, 55, 0.6);
+      }
+      body.mv-theme-autoridad .mv-amazon-card-title { color: #f5e9c4; }
+      body.mv-theme-autoridad .mv-amazon-card-subtitle { color: rgba(245, 233, 196, 0.6); }
+      body.mv-theme-autoridad .mv-amazon-card-author { color: #d4af37; }
+      body.mv-theme-autoridad .mv-amazon-card-cta {
+        background: #d4af37;
+        color: #0a0a0a;
+      }
+      body.mv-theme-autoridad .mv-amazon-card:hover .mv-amazon-card-cta {
+        background: #f4cf57;
+      }
+      body.mv-theme-autoridad .mv-amazon-eyebrow { color: #d4af37; }
+      body.mv-theme-autoridad .mv-amazon-title { color: #f5e9c4; }
+      body.mv-theme-autoridad .mv-amazon-subtitle { color: rgba(245, 233, 196, 0.55); }
+
+      /* Mini tarjeta Amazon en cuestionarios de Autoridad */
+      body.mv-theme-autoridad .mv-amazon-mini {
+        background: #0a0a0a;
+        border: 1px solid rgba(212, 175, 55, 0.35);
+      }
+      body.mv-theme-autoridad .mv-amazon-mini-eyebrow { color: #d4af37; }
+      body.mv-theme-autoridad .mv-amazon-mini-title { color: #f5e9c4; }
+      body.mv-theme-autoridad .mv-amazon-mini-cta {
+        background: #d4af37;
+        color: #0a0a0a;
+      }
+      body.mv-theme-autoridad .mv-amazon-mini-cta:hover {
+        background: #f4cf57;
+        color: #0a0a0a;
+      }
+
+      /* ──── MATRIMONIOS: rojo carmesí + dorado (default ya está bien) ──── */
+      /* Los estilos default ya usan #6B0D0D y #c9a22e — solo refinamos */
+      body.mv-theme-matrimonios .mv-amazon-card-title { color: #6B0D0D; }
+      body.mv-theme-matrimonios .mv-amazon-card-cta { background: #6B0D0D; }
+      body.mv-theme-matrimonios .mv-amazon-card:hover .mv-amazon-card-cta { background: #4a0808; }
+
       @media (max-width: 600px) {
         .mv-index-banner { padding: 12px 16px; margin: 12px; }
         .mv-progress-pill { font-size: 9px; padding: 8px 14px; }
@@ -1089,7 +1140,7 @@
     BOOK_ID: BOOK_ID,
     SECTION_ID: SECTION_ID,
     QUIZ_FORMAT: QUIZ_FORMAT,
-    VERSION: 'v5',
+    VERSION: 'v6',
     BOOKS: BOOKS_FOR_THIS_SITE
   };
 
@@ -1098,6 +1149,11 @@
   // ────────────────────────────────────────────────────
   function init() {
     injectStyles();
+
+    // Aplicar tema según el libro
+    if (BOOK_ID && BOOK_ID !== 'general') {
+      document.body.classList.add('mv-theme-' + BOOK_ID);
+    }
 
     if (IS_INDEX) {
       upgradeIndex();
